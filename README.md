@@ -17,10 +17,9 @@ The phenotypic and genotypic data used is the same that was used in our Plant Di
   - [html output](https://rawgit.com/malachycampbell/Utilizing-random-regression-models-for-genomic-prediction-of-a-longitudinal-trait-derived-from-HTP/master/HTMLoutput/1.Phenoprep.html)
   - [.Rmd File](https://rawgit.com/malachycampbell/Utilizing-random-regression-models-for-genomic-prediction-of-a-longitudinal-trait-derived-from-HTP/master/Rmarkdownfiles/1.Phenoprep.Rmd)
   
-  ## Funding
+ ## Funding
 *Funding for this project was provided by the National Science Foundation through the Plant Genome Reasearch Program grant [(#1238125)](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1238125) awarded to HW and a Research Infrastructure Improvement (RII) Track-2 Focused EPSCoR grant [(#1736192)](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1736192) awarded to HW and GM.*
 
-[![DOI](https://zenodo.org/badge/138613689.svg)](https://zenodo.org/badge/latestdoi/138613689)
 ---
 
 <img align = "left" alt="WRCHR" src = WRCHR.png width = "200" height = "65.43491">
