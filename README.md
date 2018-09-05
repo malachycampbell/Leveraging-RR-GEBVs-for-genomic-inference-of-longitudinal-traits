@@ -13,9 +13,13 @@ This repo contains all the code and data used for the manuscript: "Leveraging br
 The phenotypic and genotypic data used is the same that was used in our Plant Direct manuscript. So if you are interested in seeing how we cleaned up the raw data, head on over to the [RR genomic prediction page](https://github.com/malachycampbell/Utilizing-random-regression-models-for-genomic-prediction-of-a-longitudinal-trait-derived-from-HTP) and check out the first two sections.
 
 ## Table of Contents 
-* **1. Preparation of Phenotypic Data**
-  - [html output](https://rawgit.com/malachycampbell/Utilizing-random-regression-models-for-genomic-prediction-of-a-longitudinal-trait-derived-from-HTP/master/HTMLoutput/1.Phenoprep.html)
-  - [.Rmd File](https://rawgit.com/malachycampbell/Utilizing-random-regression-models-for-genomic-prediction-of-a-longitudinal-trait-derived-from-HTP/master/Rmarkdownfiles/1.Phenoprep.Rmd)
+* **1. Preparation of Genotypic Data**
+  - [html output](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/1.GenotypicData.html)
+  - [.Rmd File](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/1.GenotypicData.Rmd)
+  
+ * **1. Preparation of Genotypic Data**
+  - [html output](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/1.GenotypicData.html)
+  - [.Rmd File](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/1.GenotypicData.Rmd)
   
  ## Funding
 *Funding for this project was provided by the National Science Foundation through the Plant Genome Reasearch Program grant [(#1238125)](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1238125) awarded to HW and a Research Infrastructure Improvement (RII) Track-2 Focused EPSCoR grant [(#1736192)](https://www.nsf.gov/awardsearch/showAward?AWD_ID=1736192) awarded to HW and GM.*
