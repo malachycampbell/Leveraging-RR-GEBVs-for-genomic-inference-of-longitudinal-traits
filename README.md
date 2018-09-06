@@ -17,27 +17,27 @@ The phenotypic and genotypic data used is the same that was used in our Plant Di
   - [html output](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/1.GenotypicData.html)
   - [.Rmd File](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/1.GenotypicData.Rmd)
   
- * **2. Predicting GEBVs with random regression models**
+* **2. Predicting GEBVs with random regression models**
   - [html output](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/2.GEBVs_RR.html)
   - [.Rmd File](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/2.GEBVs_RR.Rmd)
   
-  * **3. Predicting GEBVs with single time point gBLUP models**
+* **3. Predicting GEBVs with single time point gBLUP models**
   - [html output](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/3.GEBVs_TP.html)
   - [.Rmd File](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/3.GEBVs_TP.Rmd)
   
-  * **4. Estimating marker effects from GEBVs**
+* **4. Estimating marker effects from GEBVs**
   - [html output](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/4.BetasFromGEBVs.html)
   - [.Rmd File](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/4.BetasFromGEBVs.Rmd)
  
-   * **5. Calculating *p*-values for RR and TP GWAS**
+* **5. Calculating *p*-values for RR and TP GWAS**
   - [html output](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/5.CalculatingPvaluesForGWAS.html)
   - [.Rmd File](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/5.CalculatingPvaluesForGWAS.Rmd)
   
-   * **6. Summarising GWAS results**
+* **6. Summarising GWAS results**
   - [html output](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/6.SummariseGWASResults.html)
   - [.Rmd File](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/6.SummariseGWASResults.Rmd)
   
-   * **6. Classification of QTL from the RR approach**
+* **6. Classification of QTL from the RR approach**
   - [html output](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/7.ClassificationOfQTL.html)
   - [.Rmd File](https://rawgit.com/malachycampbell/Leveraging-RR-GEBVs-for-genomic-inference-of-longitudinal-traits/master/HTMLoutput/7.ClassificationOfQTL.Rmd)
   
