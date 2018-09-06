@@ -1,0 +1,380 @@
+---
+title: "Calculating $p$-values for RR and TP GWAS"
+author: "Malachy Campbell"
+date: "8/7/2018"
+output:
+  rmdformats::html_clean:
+    fig_width: 6
+    fig_height: 6
+    highlight: kate
+    thumbnails: true
+    lightbox: true
+    gallery: true
+---
+
+```{r setup, include=FALSE, echo = F, eval = T}
+knitr::opts_knit$set(root.dir = '~/Desktop/RRgwas_git/RR_GP/')
+```
+
+# Background
+Here, we'll calculate the variance componnets for both the RR and TP approaches, and calculate the p-values for the marker effects. Due to the size of the dataset, the matrix mutliplication can be too computationally demanding for a desktop PC. As a results, all these analyses were run on a computing cluster with 64 Gb of RAM. The code used to run the analyses, as well as the slurm file for submission is provided, but to repeat the analyses  users should find a suitable machine.
+
+# Estimating variance components for the TP approach.
+Recall, that the TP approach produces 20 individual files. The code chunks below parses those files, extracts the variance components, and stores them for later use.
+
+Parses the asr files.
+```{bash varcomp, eval = T}
+cd /Users/malachycampbell/Desktop/RRgwas_git/TP_GP/
+for file in *.asr; do less $file | grep -A6 "Model_Term" | sed -n "1,4p" | tr -s " " > $file.varcomp.txt; done
+```
+
+Read in the parsed asr file and extract the variance components. 
+```{r TP var comp, eval = T}
+library(reshape2)
+
+setwd("/Users/malachycampbell/Desktop/RRgwas_git/TP_GP/")
+
+FILES <- paste0("TPY", 1:20, ".asr.varcomp.txt")
+for(i in 1:20){
+  tmp <- read.table(FILES[i], skip = 1, sep="")
+  tmp$DOI <- i
+  if(i == 1){
+    final <- tmp
+  }else{
+    final <- rbind(final, tmp)
+  }
+}
+final <- final[c("V1", "V5", "DOI")]
+colnames(final)[1:2] <- c("Source", "Sigma")
+
+Var.TP <- dcast(final, Source ~ DOI, value.var = "Sigma")
+Var.TP <- Var.TP[2:21]
+row.names(Var.TP) <- c("Exp", "G", "E")
+print(Var.TP)
+```
+
+# Estimating variance components for the RR approach.
+To get the p-values, we need to know $\sigma^2_g$ and $\sigma^2_e$ at each time point. The RR approach only produces a single .asr file. Using the methods described by [Mrode 2014](https://books.google.com/books?hl=en&lr=&id=b6MKAwAAQBAJ&oi=fnd&pg=PR5&dq=mrode+linear+models&ots=8Q3ejuZBpU&sig=PVGj2Zi13XD9f_ATZt3Pt4X7r1U), and our [Plant Direct paper](https://www.biorxiv.org/content/early/2018/07/12/319897) we can solve for the variance components as follows. Briefly, for time $i$ the genetic variance can be obtained by $\mathbf{t}_{i} \mathbf{\Omega} \mathbf{t}_{i}'$, where $\mathbf{t}_{i} = \phi_{ik}$, the $i$th row vector of the matrix of Legendre polynomials at different time points ($\mathbf{\phi}$) for the $i$th day of imaging, $\mathbf{\Omega}$ is the covariance matrix of RR coefficients for the  genetic effects, and $k$ is the order of fit. The variance of the experimental effect across time points was calculated using the same approach.
+
+The functions below were adapted from Mrode (2005) by [Gota Morota](http://morotalab.org/Mrode2005/rr/rr.html#section00020000000000000000)
+```{r load functions for RR with leg polynomials, echo=FALSE}
+##Return coefficient matrix (lambda) of n-th order Legendre polynomials. Scaling method implemented by Gengler et. al. (1999) converts constant Legendre polynomial coefficients into 1
+`legendre` <-
+  function(n, gengler){
+    
+    if (nargs()==1){
+      gengler <- TRUE	
+    }
+    
+    if (gengler != TRUE & gengler != FALSE){
+      gengler=TRUE	
+    }
+    
+    N <- n+1
+    L <- matrix(0,nrow=N, ncol=N)
+    
+    for(i in (1:N)){
+      if(i==1){
+        L[i,i] <- 1
+      }
+      else if(i==2){
+        L[i,i] <- 1
+      }
+      else  {
+        tmp <- L[i-1,]
+        tmp2 <- as.numeric()
+        tmp2 <- c(0,tmp[1:(N-1)])
+        L[i,] <- (1/(i-2+1))*( (2*(i-2) + 1)*tmp2 -(i-2)*L[i-2,] )
+      }
+    }
+    
+    # Normalize
+    for (j in (1:N)){	
+      L[j,] <- (sqrt( (2*(j-1)+1)/2)  )*L[j,]
+    }
+    
+    
+    # Gengler (1999)
+    if (gengler==TRUE){
+      L <- sqrt(2)*L
+    }
+    
+    return(L)
+    
+  }
+
+##Given time points covariate and order of fit for Legendre polynomials, return matrix 'M' containing the polynomials of standardized time. 'M' is order t (number of time points) by k (order of Legendre polynomials)
+stdtime <- function(t, n, tmax, tmin){
+  if(missing(tmax)) {
+    tmax <- t[which.max(t)]
+  }
+  if(missing(tmin)) {
+    tmin <- t[which.min(t)]
+  }
+  
+  N <- n+1
+  M <- matrix(0, nrow=length(t), ncol=N)
+  a <- -1 + 2*(t-tmin)/(tmax - tmin)
+  M[,1] <- 1
+  
+  for (i in 2:N){
+    M[,i] <- a^(i-1)
+  }
+  
+  return(M)
+}
+```
+
+```{r solve for error and g variances for RR}
+Resvar <- c(1.39E-03, 1.22E-03, 2.06E-03, 3.33E-03, 5.32E-03,
+            7.88E-03, 1.18E-02, 1.53E-02, 2.04E-02, 2.75E-02,
+            4.02E-02, 5.80E-02, 8.19E-02, 0.114587, 0.164339, 
+            0.22392, 0.336068, 0.521511, 0.78897, 1.17139)
+
+#Genetic variance. Here a second order Legendre polynomial was used. So G will be a 3 x 3 matrix of 
+G.mat <- matrix(c(0.629183, 0.495574, 0.129607,
+                  0.495574, 0.394557, 0.104540,
+                  0.129607, 0.104540, 0.281278E-01), 3, 3)
+
+
+Phi <- stdtime(1:20, 2) %*% t(legendre(2, gengler = F))
+G.COV <- Phi %*% G.mat %*% t(Phi)
+Gvar <- diag(G.COV)
+
+print(Gvar)
+```
+
+# Calculating $p$-values
+
+## Variance of SNP effects
+The variance of marker effects at each time point obtained through TP or RR approaches was calculated following the methods outlined by \cite{duarte2014rapid}. Since we solve for RR-derived GEBVs at each time point, the models for the TP and RR approaches can both be parameterized as 
+
+$$\mathbf{y} = \mathbf{Xb} + \mathbf{Zu} + \mathbf{Qs} +  \mathbf{e}$$
+
+where all vectors and matrices are defined in previous sections except $\mathbf{b}$, which is the average PSA at each time point and $\mathbf{X}$ is an incidence matrix that relates the mean PSA to the observations.
+
+The variance of SNP effects is obtained using
+
+$$\text{Var}(\boldsymbol{\hat{\beta}}) = \text{Var}(\mathbf{W'_{sc}G^{-1}\hat{g}}) = \mathbf{W'_{sc}G^{-1}}\text{Var}(\mathbf{\hat{g}})\mathbf{G^{-1}W_{sc} }$$
+
+and Var($\mathbf{\hat{g}}$) can be obtained using
+
+$$\text{Var}(\mathbf{\hat{g}}) = \text{Var}(\mathbf{g}) - \mathbf{C^{aa}} = \mathbf{G\sigma^{2}_{g}} - \mathbf{C^{aa}}$$
+
+Substituting the expression above into the expression for $\text{Var}(\boldsymbol{\hat{\beta}})$ we obtain
+
+$$\text{Var}(\boldsymbol{\hat{\beta}}) = \mathbf{W'_{sc}G^{-1}}(\mathbf{G\sigma^{2}_{g}} - \mathbf{C^{aa}})\mathbf{G^{-1}W_{sc} } \\
+  = \mathbf{W'_{sc}G^{-1}W_{sc}}\sigma^2_g - \mathbf{W'_{sc}G^{-1}C^{aa}G^{-1}W_{sc} }$$
+
+Here, $\mathbf{C^{aa}}$ is obtained by inverting the coefficient matrix of the mixed model equation outlined by \cite{hendersonapplications}, and is provided below.
+
+$$\mathbf{C^{aa}} = \sigma^2_e(\mathbf{I - X(X'X)^{-1}X' + G^{-1}\lambda})^{-1}, \lambda = \frac{\sigma^2_e}{\sigma^2_g}$$
+
+## Obtaining $p$-values for marker effects
+SNP effects for SNP$_j$ at time $t$ were divided by their corresponding $\text{Var}(\boldsymbol{\hat{\beta}})$ using
+
+$$\text{SNP}_{jt} = \frac{ \mathbf{\hat{\beta}} }{ \sqrt{\text{Var}(\mathbf{\hat{\beta})}} }$$
+
+The $p$-values for marker effects were calculated as 1 minus the cumulative probability density of the absolute value of SNP$_{jt}$, and this number was subsequently multiplied by two. This is summarized as follows.
+
+$$p\text{-value}_{SNP_{jt}} = 2(1 - \phi (|\text{SNP}_{jt}|))$$
+
+## Code for $p$-values for TP
+```{r tusker code for TP p vals, eval=F}
+#G <- as.matrix( read.table("/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/G.mat.txt", header = T, sep = "\t") )
+#Eff.mat <- as.matrix(read.csv("/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/SingleTP/Eff.mat.TP.csv", header = T) )
+#Zsc <- t( as.matrix (read.table("/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/Zsc.txt", header = T, sep = "\t") ) )
+G <- as.matrix( read.table("/work/walia/malachyc/GWAS_RR/TP/G.mat.txt", header = T, sep = "\t") )
+Eff.mat <- as.matrix(read.csv("/work/walia/malachyc/GWAS_RR/TP/Eff.mat.TP.csv", header = T) )
+Zsc <- t( as.matrix (read.table("/work/walia/malachyc/GWAS_RR/TP/Zsc.txt", header = T, sep = "\t") ) )
+
+Resvar <- c(0.000939236, 1.49797e-03, 0.002367530, 0.003663920,
+            0.00572549, 0.00870432, 0.01314460, 0.0190308, 0.0256669,
+            0.0361005, 0.0518562, 0.0716713, 0.0987518, 0.136906,
+            0.183834, 0.239530, 0.320283, 0.425670, 0.557633, 0.713288)
+
+#Genetic variance. Here a second order Legendre polynomial was used. So G will be a 3 x 3 matrix of 
+Gvar <- c(0.001281870, 1.97533e-03, 0.002975420, 0.004486940,
+           0.00688775, 0.01172790, 0.01825820, 0.0282031, 0.0404264,
+           0.0618636, 0.0889936, 0.1257470, 0.1763360, 0.245715,
+           0.345742, 0.480172, 0.668682, 0.948812, 1.223190, 1.630200)
+
+
+print("COV matrices finsihed")
+
+pvalue.mat <- matrix(0, ncol = 20, nrow = ncol(Zsc))
+SD.mat <- matrix(0, ncol = 20, nrow = ncol(Zsc))
+
+for (i in 1:20){
+  print(paste0("Doing part ", i))
+  X <- matrix(rep(1, 357), nrow = nrow(G), ncol = 1, byrow = T)
+
+  #Z is the incidence matrix to allocate phenotypic observations to individuals; Identity matrix
+  Z <- diag(nrow(G))
+
+  #This is the middle part of C^aa
+  #X(X'X)^{−1}X'
+  Z2 <- X %*% solve(t(X) %*% X) %*% t(X) # 357 x 357
+  G_inv <- solve(G)
+
+  part1 <- t(Zsc) %*% G_inv %*% Zsc #m x m 
+  sig.g = Gvar[i]
+  sig.e =  Resvar[i]
+  lambda = sig.e / sig.g
+  
+  Caa <- (solve(diag(nrow(Zsc)) - Z2 + (G_inv * lambda))) * sig.e #357 x 357
+  
+  part2 <- t(Zsc) %*% G_inv %*% Caa %*% G_inv %*% Zsc # m x m
+  
+  #Only interested in the diagonal elements
+  var.SNPs <- diag( part1 * sig.g - part2 ) # 33690
+  rm(part2)
+  #Standard deviation snp effects
+  sd.SNPs <- sqrt(var.SNPs)
+
+  #SNP_effect /Standard deviaton of snp effects
+  SNPe_ad <- Eff.mat[,i] / sd.SNPs
+  pvalue.mat[,i] <- 2*(1-pnorm(abs(SNPe_ad)))
+}
+
+write.table(pvalue.mat, "/work/walia/malachyc/GWAS_RR/TP/pvals.txt", sep = "\t", row.names = T, col.names = T)
+
+write.table(SD.mat, "/work/walia/malachyc/GWAS_RR/TP/SDs.txt", sep = "\t", row.names = T, col.names = T)
+```
+
+## Code for $p$-values for RR
+```{r tusker code for RR p vals, eval=F}
+##Return coefficient matrix (lambda) of n-th order Legendre polynomials. Scaling method implemented by Gengler et. al. (1999) converts constant Legendre polynomial coefficients into 1
+`legendre` <-
+  function(n, gengler){
+    
+    if (nargs()==1){
+      gengler <- TRUE	
+    }
+    
+    if (gengler != TRUE & gengler != FALSE){
+      gengler=TRUE	
+    }
+    
+    N <- n+1
+    L <- matrix(0,nrow=N, ncol=N)
+    
+    for(i in (1:N)){
+      if(i==1){
+        L[i,i] <- 1
+      }
+      else if(i==2){
+        L[i,i] <- 1
+      }
+      else  {
+        tmp <- L[i-1,]
+        tmp2 <- as.numeric()
+        tmp2 <- c(0,tmp[1:(N-1)])
+        L[i,] <- (1/(i-2+1))*( (2*(i-2) + 1)*tmp2 -(i-2)*L[i-2,] )
+      }
+    }
+    
+    # Normalize
+    for (j in (1:N)){	
+      L[j,] <- (sqrt( (2*(j-1)+1)/2)  )*L[j,]
+    }
+    
+    
+    # Gengler (1999)
+    if (gengler==TRUE){
+      L <- sqrt(2)*L
+    }
+    
+    return(L)
+    
+  }
+
+##Given time points covariate and order of fit for Legendre polynomials, return matrix 'M' containing the polynomials of standardized time. 'M' is order t (number of time points) by k (order of Legendre polynomials)
+stdtime <- function(t, n, tmax, tmin){
+  if(missing(tmax)) {
+    tmax <- t[which.max(t)]
+  }
+  if(missing(tmin)) {
+    tmin <- t[which.min(t)]
+  }
+  
+  N <- n+1
+  M <- matrix(0, nrow=length(t), ncol=N)
+  a <- -1 + 2*(t-tmin)/(tmax - tmin)
+  M[,1] <- 1
+  
+  for (i in 2:N){
+    M[,i] <- a^(i-1)
+  }
+  
+  return(M)
+}
+
+#G <- read.table("/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/G.mat.txt", header = T, sep = "\t")
+#Eff.mat <- read.csv("/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/Eff.mat.csv", header = T)
+#Zsc <- read.table("/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/Zsc.txt", header = T, sep = "\t")
+G <- as.matrix( read.table("/work/walia/malachyc/GWAS_RR/G.mat.txt", header = T, sep = "\t") )
+Eff.mat <- as.matrix(read.csv("/work/walia/malachyc/GWAS_RR/Eff.mat.csv", header = T) )
+Zsc <- t( as.matrix (read.table("/work/walia/malachyc/GWAS_RR/Zsc.txt", header = T, sep = "\t") ) )
+
+print("Loaded all files")
+
+Resvar <- c(1.39E-03, 1.22E-03, 2.06E-03, 3.33E-03, 5.32E-03,
+            7.88E-03, 1.18E-02, 1.53E-02, 2.04E-02, 2.75E-02,
+            4.02E-02, 5.80E-02, 8.19E-02, 0.114587, 0.164339, 
+            0.22392, 0.336068, 0.521511, 0.78897, 1.17139)
+
+#Genetic variance. Here a second order Legendre polynomial was used. So G will be a 3 x 3 matrix of 
+G.mat <- matrix(c(0.629183, 0.495574, 0.129607,
+                  0.495574, 0.394557, 0.104540,
+                  0.129607, 0.104540, 0.281278E-01), 3, 3)
+
+
+Phi <- stdtime(1:20, 2) %*% t(legendre(2, gengler = F))
+G.COV <- Phi %*% G.mat %*% t(Phi)
+Gvar <- diag(G.COV)
+
+print("COV matrices finsihed")
+
+pvalue.mat <- matrix(0, ncol = 20, nrow = ncol(Zsc))
+SD.mat <- matrix(0, ncol = 20, nrow = ncol(Zsc))
+
+X <- matrix(rep(1, 357), nrow = nrow(G), ncol = 1, byrow = T)
+
+#Z is the incidence matrix to allocate phenotypic observations to individuals; Identity matrix
+Z <- diag(nrow(G))
+
+#This is the middle part of C^aa
+#X(X'X)^{−1}X'
+Z2 <- X %*% solve(t(X) %*% X) %*% t(X) # 357 x 357
+
+G_inv <- solve(G)
+
+#This is the first part of Var(\hat{g}) = Z'G^{-1}Z \sigma^2_g − Z'G−1 C^{aa}G^{−1}Z, and we'll calculate it here once and reuse it since it won't change for each day.
+part1 <- t(Zsc) %*% G_inv %*% Zsc #m x m 
+
+for (i in 1:20){
+  print(paste0("Doing part ", i))
+  sig.g = Gvar[i]
+  sig.e =  Resvar[i]
+  lambda = sig.e / sig.g
+  
+  Caa <- (solve(diag(nrow(Zsc)) - Z2 + (G_inv * lambda))) * sig.e #357 x 357
+  
+  part2 <- t(Zsc) %*% G_inv %*% Caa %*% G_inv %*% Zsc # m x m
+  
+  #Only interested in the diagonal elements
+  var.SNPs <- diag( part1 * sig.g - part2 ) # 33690
+  rm(part2)
+  #Standard deviation snp effects
+  sd.SNPs <- sqrt(var.SNPs)
+
+  #SNP_effect /Standard deviaton of snp effects
+  SNPe_ad <- Eff.mat[,i] / sd.SNPs
+  pvalue.mat[,i] <- 2*(1-pnorm(abs(SNPe_ad)))
+}
+
+write.table(pvalue.mat, "/work/walia/malachyc/GWAS_RR/pvals.txt", sep = "\t", row.names = T, col.names = T)
+
+write.table(SD.mat, "/work/walia/malachyc/GWAS_RR/SDs.txt", sep = "\t", row.names = T, col.names = T)
+```

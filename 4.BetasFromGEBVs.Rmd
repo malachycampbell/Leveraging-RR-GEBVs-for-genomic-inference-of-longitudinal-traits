@@ -1,0 +1,80 @@
+---
+title: "Estimating marker effects from GEBVs"
+author: "Malachy Campbell"
+date: "8/7/2018"
+output:
+  rmdformats::html_clean:
+    fig_width: 6
+    fig_height: 6
+    highlight: kate
+    thumbnails: true
+    lightbox: true
+    gallery: true
+---
+
+```{r setup, include=FALSE, echo = F}
+knitr::opts_knit$set(root.dir = '~/Desktop/RRgwas_git/RR_GP/')
+```
+
+# Background
+Here, we'll take the GEBVs obtained with the RR and TP approaches and back solve to get the marker effects. 
+
+Recall that GEBVs ($\mathbf{\hat{g} }$) can be parameterized as $\mathbf{\hat{g} } = \boldsymbol{\hat{\beta} W_{sc} }$, where $\mathbf{W_{sc}}$ is a matrix of marker genotypes, as defined above, and $\boldsymbol{\hat{\beta}}$ is a vector of allele substitution effects. $\boldsymbol{\hat{\beta}}$ can be obtained using best linear unbiased prediction (BLUP) by
+
+$$BLUP(\boldsymbol{\beta}) = \mathbf{W'_{sc}}(\mathbf{W_{sc}W'_{sc}})^{-1} \left [\mathbf{I} + \mathbf{G}^{-1} \frac{\sigma^2_e}{\sigma^2_g} \right ]^{-1} \mathbf{y}$$
+where $\sigma^2_g$ and $\sigma^2_e$ are genetic and residual variances, respectively.
+
+Given BLUP of GEBVs is
+
+$$BLUP(\mathbf{g}) = \left [ \mathbf{I} + \mathbf{G}^{-1} \frac{\sigma^2_e}{\sigma^2_g} \right ]^{-1} \mathbf{y}$$
+
+BLUP of marker effects can be obtained using the following linear transformation
+
+$$BLUP(\boldsymbol{\beta}) = \mathbf{W_{sc}'}(\mathbf{W_{sc}W_{sc}'})^{-1}BLUP(\mathbf{g})$$
+
+#Estimating marker effects for RR-derived GEBVs
+Given the relationship between BLUP of breeding values and marker effects, this script will calcualte the marker effects from GEBVs.
+```{r load RR files}
+library(reshape2)
+GEBVs <- read.csv("/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/RR_GEBVs.csv")
+
+#convert it to n x t, where n is the number of accessions
+GEBVs <- dcast(GEBVs, NSFTV.ID ~ DayOfImaging, value.var = "gBLUP")
+
+Zsc <- t(as.matrix(read.table("/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/Zsc.txt", sep = "\t", header =T) ))
+Zsc <- Zsc[match(GEBVs$NSFTV.ID, row.names(Zsc)) ,]
+sum(GEBVs$NSFTV.ID == row.names(Zsc))
+
+G <- as.matrix(read.table("/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/G.mat.txt", sep = "\t", header =T) )
+sum(GEBVs$NSFTV.ID == colnames(G))
+
+GEBVs$NSFTV.ID <- NULL
+```
+
+```{r solve for marker effects from RR GEBVs}
+Eff.mat <- matrix(0, nrow = ncol(Zsc), ncol = 20)
+
+for (i in 1:20){
+  Eff.mat[,i] <- t(Zsc) %*% solve(G) %*% matrix(GEBVs[,i], ncol=1, nrow=nrow(Zsc))
+}
+
+write.csv(Eff.mat, "/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/RR/Eff.mat.csv", row.names = F)
+```
+
+
+#Estimating marker effects for TP-derived GEBVs
+```{r solve for marker effects from TP GEBVs}
+setwd("/Users/malachycampbell/Desktop/RRgwas_git/TP_GP/")
+
+FILES <- paste0("TPY", 1:20, ".sln")
+
+Eff.mat.TP <- matrix(0, nrow = ncol(Zsc), ncol = 20)
+
+for (i in 1:20){
+  tmp <- read.table(FILES[i], sep = "", header = T, nrow = nrow(read.table(FILES[i], sep = "", header = T)))
+  tmp <- tmp[grep("NSFTV_", tmp$Level) ,]
+  #Eff.mat[,i] <- t(Zsc) %*% solve(G) %*% matrix(ghat.t.y[,i], ncol=1, nrow=nrow(Zsc))
+  Eff.mat.TP[,i] <- t(Zsc) %*% solve(G) %*% matrix(tmp$Effect, ncol=1, nrow=nrow(Zsc))
+}
+
+write.csv(Eff.mat.TP, "/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/TP/Eff.mat.csv", row.names = F)
