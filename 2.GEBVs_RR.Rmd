@@ -13,12 +13,12 @@ output:
 ---
 
 ```{r setup, include=FALSE, echo = F}
-knitr::opts_knit$set(root.dir = '~/Desktop/RRgwas_git/RR_GP/')
+knitr::opts_knit$set(root.dir = '~/Documents/Dropbox/Work/Manuscripts/2018_RandomRegressionGWAS/ThePlantGenome/Revision/New Analysis/')
 ```
 
 # Background
 The purpose of this script is to predict genomic breeding values (GEBVs) using a random regression model. The RR model is 
-$$ PSA_{tjk} = \mu + \sum_{k=0}^{2}\phi(t)_{jk}\beta_k + \sum_{k=0}^{2}\phi(t)_{jk} u_{jk} + \sum_{k=0}^{1}\phi(t)_{jk} s_{jk} + e_{tjk}$$. Where $\beta$ is the fixed second-order Legendre polynomial to model the overall trend in the trait overtime, $u_{jk}$ and $s_{jk}$ are the $k^{th}$ random regression coefficients for additive genetic effect and random experiment of line $j$, and $e_{tjk}$ is the random residual. This model was seelcted through comparisons between several other RR models. The complete process is decribed in our previous paper in Plant Direct and on [bioRxiv](https://www.biorxiv.org/content/early/2018/07/12/319897).
+$$ PSA_{tjk} = \sum_{k=0}^{2}\phi(t)_{jk}\beta_k + \sum_{k=0}^{2}\phi(t)_{jk} u_{jk} + \sum_{k=0}^{1}\phi(t)_{jk} s_{jk} + e_{tjk}$$. Where $\beta$ is the fixed second-order Legendre polynomial to model the overall trend in the trait overtime, $u_{jk}$ and $s_{jk}$ are the $k^{th}$ random regression coefficients for additive genetic effect and random experiment of line $j$, and $e_{tjk}$ is the random residual. This model was seelcted through comparisons between several other RR models. The complete process is decribed in our previous paper in Plant Direct and on [bioRxiv](https://www.biorxiv.org/content/early/2018/07/12/319897).
 
 Since asreml-R does not allow the use of Legendre polynomials all analysis were done with the standalone version of ASREML. Below the ".as" file is provided as well as the call from the commandline.
 
@@ -28,98 +28,31 @@ Here is the .as file.
 RR model selection
  NID !A
  Exp !A
- Rep 2
- DayOfImaging 20 !I
+ DOI 20 !I
  PSA !/100000
 G2.grm
-PSA.cleaned.csv !SKIP 1 !MAXITER 1000 !EXTRA 100 !WORKSPACE 6144 !ASUV !DOPATH 8
+PSA.cleaned.mn.csv !SKIP 1 !MAXITER 1000 !EXTRA 100 !WORKSPACE 6144 !ASUV !SLOW 10 !DOPART 1
 
-!PATH 1 #Model1
-!ASSIGN USg !< !INIT
-0.254496
-!>
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp leg(DayOfImaging,0).grm(NID) !f mv
-
-!PATH 2 #Model2: 19358.83 -38673.65 -38495.60
+!PATH 1
 !ASSIGN USe !< !INIT
-1.60E-03 1.52E-03 2.06E-03 3.00E-03 4.59E-03 7.12E-03 1.13E-02 1.82E-02 2.86E-02 4.11E-02 6.09E-02 9.26E-02 1.33E-01 1.87E-01 2.69E-01 0.349805 0.503757 0.740224 1.06494 1.52276
+1.37E-03 1.11E-03 1.87E-03 3.00E-03 4.81E-03 7.08E-03 1.04E-02 1.33E-02 1.78E-02 2.40E-02 3.52E-02 5.10E-02 7.23E-02 0.101765 0.1486 0.203647 0.308825 0.484353 0.743772 1.11587
 !>
 !ASSIGN USg !< !INIT
-0.254496
-!>
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,0) $USg).grm(NID) !f mv
-residual id(2142).idh(DayOfImaging $USe)
-
-!PATH 3 #Model3: 
-!ASSIGN USg !< !INIT
-0.254496
-0.200363 0.159373
-!>
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,1) $USg).grm(NID) !f mv
-
-!PATH 4 #Model4: 23273.62 -46499.24 -46305.01
-!ASSIGN USe !< !INIT
-1.60E-03 1.52E-03 2.06E-03 3.00E-03 4.59E-03 7.12E-03 1.13E-02 1.82E-02 2.86E-02 4.11E-02 6.09E-02 9.26E-02 1.33E-01 1.87E-01 2.69E-01 0.349805 0.503757 0.740224 1.06494 1.52276
-!>
-!ASSIGN USg !< !INIT
-0.254496
-0.200363 0.159373
-!>
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,1) $USg).grm(NID) !f mv
-residual id(2142).idh(DayOfImaging $USe)
-
-!PATH 5 #Model5: 
-!ASSIGN USg !< !INIT
-0.667162
-0.587027 0.519362
-0.185506 0.164992 0.526885E-01
-!>
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,2) $USg).grm(NID) !f mv
-
-!PATH 6 #Model6: 24718.93 -49383.86 -49165.35
-!ASSIGN USe !< !INIT
-1.60E-03 1.52E-03 2.06E-03 3.00E-03 4.59E-03 7.12E-03 1.13E-02 1.82E-02 2.86E-02 4.11E-02 6.09E-02 9.26E-02 1.33E-01 1.87E-01 2.69E-01 0.349805 0.503757 0.740224 1.06494 1.52276
-!>
-!ASSIGN USg !< !INIT
-0.254496
-0.200363 0.159373
-0.514966E-01 0.414476E-01 0.109234E-01
-!>
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,2) $USg).grm(NID) !f mv
-residual id(2142).idh(DayOfImaging $USe)
-
-!PATH 7 #Model7: 
-!ASSIGN USg !< !INIT
-0.685896
-0.589393 0.509177
-0.190862 0.166014 0.545985E-01
+0.583091
+0.456320 0.360961
+0.117960 0.945203E-01 0.251287E-01
 !>
 !ASSIGN USp !< !INIT
-0.162107
-0.151803 0.147320
+0.603125E-01 
+0.400317E-01 0.267477E-01
 !>
-PSA ~ mu leg(DayOfImaging,2) !r us(leg(DayOfImaging,1) $USp).Exp us(leg(DayOfImaging,2) $USg).grm(NID) !f mv
-
-!PATH 8 #Model8: 27537.59 -55017.19 -54782.49
-!ASSIGN USe !< !INIT
-1.37E-03 1.22E-03 2.07E-03 3.32E-03 5.32E-03 7.88E-03 1.18E-02 1.53E-02 2.04E-02 2.76E-02 4.03E-02 5.80E-02 8.19E-02 0.114627 0.164452 0.224128 0.336555 0.522506 0.790597 1.17392
-!>
-!ASSIGN USg !< !INIT
-0.629183
-0.495574 0.394557
-0.129607 0.104540 0.281278E-01
-!>
-!ASSIGN USp !< !INIT
-0.594161E-01
-0.392295E-01 0.260640E-01
-!>
-PSA ~ mu leg(DayOfImaging,2) !r us(leg(DayOfImaging,1) $USp).Exp us(leg(DayOfImaging,2) $USg).grm(NID) !f mv
-residual id(2142).idh(DayOfImaging $USe)
+PSA ~ leg(DOI,2) !r us(leg(DOI,1) $USp).Exp us(leg(DOI,2) $USg).grm(NID) !f mv
+residual id(1071).idh(DOI $USe)
 ```
 
 Here is how it was run.
 ```{bash run asreml}
-cd /Users/malachycampbell/Desktop/RRgwas_git/RR_GP/
+cd RR_GP/
 
 asreml RR.as
 ```
@@ -200,7 +133,7 @@ Here, we'll take the sln files, extract the breeding values for the RR coefficie
 ```{r solve for BVs at each time point}
 library(reshape2)
 
-setwd("/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/")
+setwd("DataandCode/RR_GP/")
 
 sln <- read.delim("RR.sln", sep="", header=T)
   
@@ -218,5 +151,5 @@ colnames(ghat.t.y) <- 1:20
 gBLUP <- melt(ghat.t.y)
 colnames(gBLUP) <- c("NSFTV.ID", "DayOfImaging", "gBLUP")
 
-write.csv(gBLUP, "/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/RR_GEBVs.csv", row.names = F)
+write.csv(gBLUP, "RR_GEBVs.csv", row.names = F)
 ```

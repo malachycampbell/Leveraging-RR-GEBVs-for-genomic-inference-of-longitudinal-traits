@@ -13,7 +13,7 @@ output:
 ---
 
 ```{r setup, include=FALSE, echo = F, eval = T}
-knitr::opts_knit$set(root.dir = '~/Desktop/RRgwas_git/RR_GP/')
+knitr::opts_knit$set(root.dir = '/Users/malachycampbell/Documents/Dropbox/Work/Manuscripts/2018_RandomRegressionGWAS/ThePlantGenome/Revision/New Analysis/')
 ```
 
 # Background
@@ -24,12 +24,10 @@ To runbedtools we need to generate a .BED file for the signifcant SNPs.
 ```{r make bed files, echo = T, eval=TRUE}
 library(reshape2)
 
-TP.p <- as.matrix( read.table("/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/TP/pvals.txt", sep = "\t", header = T, row.names = 1) )
-RR.p <- as.matrix( read.table("/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/RR/pvals.txt", sep = "\t", header = T, row.names = 1) )
-RR.p <- RR.p + 1E-10
-TP.p <- TP.p + 1E-10
+TP.p <- as.matrix( read.table("DataAndCode/CompCluster/TP/pval.mat.txt", sep = "\t", header = T, row.names = 1) )
+RR.p <- as.matrix( read.table("DataAndCode/CompCluster/RR/pval.mat.txt", sep = "\t", header = T, row.names = 1) )
 
-MAP <- read.table("/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/MAP_maf0.05.txt", header = F, sep = "\t")
+MAP <- read.table("DataAndCode/CompCluster/MAP_maf0.05.txt", header = F, sep = "\t")
 
 row.names(TP.p) <- MAP$V2
 row.names(RR.p) <- MAP$V2
@@ -55,39 +53,39 @@ RR.p <- RR.p[c("V1", "V4", "V5", "Var2", "Var1")]
 TP.p <- TP.p[order(TP.p$V1, TP.p$V4) ,]
 RR.p <- RR.p[order(RR.p$V1, RR.p$V4) ,]
 
-length(unique(RR.p$Var1)) #717
-length(unique(TP.p$Var1)) #379
+length(unique(RR.p$Var1)) #31
+length(unique(TP.p$Var1)) #38
 
 write.table(TP.p[c("V1", "V4", "V5", "Var2")],
-            "/Users/malachycampbell/Desktop/RRgwas_git/TP_GP/bedtools/TP.p.BED",
+            "DataAndCode/TP_GP/bedtools/TP.p.BED",
             sep = "\t", col.names = F, row.names = F, quote = F)
 write.table(RR.p[c("V1", "V4", "V5", "Var2")],
-            "/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/bedtools/RR.p.BED",
+            "DataAndCode/RR_GP/bedtools/RR.p.BED",
             sep = "\t", col.names = F, row.names = F, quote = F)
 write.table(TP.p[c("V1", "V4", "V5", "Var1")],
-            "/Users/malachycampbell/Desktop/RRgwas_git/TP_GP/bedtools/TP.pSNPs.BED",
+            "DataAndCode/TP_GP/bedtools/TP.pSNPs.BED",
             sep = "\t", col.names = F, row.names = F, quote = F)
 write.table(RR.p[c("V1", "V4", "V5", "Var1")],
-            "/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/bedtools/RR.pSNPs.BED",
+            "DataAndCode/RR_GP/bedtools/RR.pSNPs.BED",
             sep = "\t", col.names = F, row.names = F, quote = F)
 ```
 
 ```{bash find QTLs, eval = F}
-cd /Users/malachycampbell/Desktop/RRgwas_git/TP_GP/bedtools/
+cd DataAndCode/TP_GP/bedtools/
 bedtools merge -i TP.p.BED -d 200000 -nms > TP.p.QTL.txt
 bedtools merge -i TP.pSNPs.BED -d 200000 -nms > TP.p.QTLSNPs.txt
-less TP.p.QTL.txt | wc -l #153
+less TP.p.QTL.txt | wc -l #15
 
-cd /Users/malachycampbell/Desktop/RRgwas_git/RR_GP/bedtools/
+cd DataAndCode/RR_GP/bedtools/
 bedtools merge -i RR.p.BED -d 200000 -nms > RR.p.QTL.txt
 bedtools merge -i RR.pSNPs.BED -d 200000 -nms > RR.p.QTLSNPs.txt
-less RR.p.QTL.txt | wc -l #342
+less RR.p.QTL.txt | wc -l #26
 
 ```
 This produces a file that lists the QTLs and has the days in which each SNP was detected in a string delimited by semicolons. This next chunk of code will take the fourth column with the string of days, split the string, and only keep non redundant entries.
 
 ```{r split column}
-RR.QTLs <- read.table("/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/bedtools/RR.p.QTL.txt",
+RR.QTLs <- read.table("DataAndCode/RR_GP/bedtools/RR.p.QTL.txt",
                       header = F, sep = "\t")
 
 RR.list <- list()
@@ -99,17 +97,17 @@ for (i in 1:nrow(RR.QTLs)){
 #Summarise
 RR.QTLs$NoDays <- unlist(lapply(RR.list, function(x) length(x)))
 
-dim(RR.QTLs[RR.QTLs$NoDays == 20 ,]) #128 QTL detected on all days
-dim(RR.QTLs[RR.QTLs$NoDays != 20 ,]) #214
-dim(RR.QTLs[RR.QTLs$NoDays >= 10 ,]) #179
-dim(RR.QTLs[RR.QTLs$NoDays == 1 ,]) #39
+dim(RR.QTLs[RR.QTLs$NoDays == 20 ,]) #13 QTL detected on all days
+dim(RR.QTLs[(RR.QTLs$NoDays < 20) & (RR.QTLs$NoDays > 12) ,]) #5 long-duration (13-19 days)
+dim(RR.QTLs[(RR.QTLs$NoDays < 13) & (RR.QTLs$NoDays > 5) ,]) #6 mid-duration (6-12 days)
+dim(RR.QTLs[(RR.QTLs$NoDays < 6) ,]) #2 short-duration QTL (< 6 days)
 ```
 
 Now I'll figure out which SNPs are most significant for each QTL. First find out which significant SNPs are in the QTL intervals with bedtools.
 
 ```{r find sig SNPs in QTLs}
 library(plyr)
-RR.QTLs <- read.table("/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/bedtools/RR.p.QTL.txt", header = F, sep = "\t")
+RR.QTLs <- read.table("DataAndCode/RR_GP/bedtools/RR.p.QTL.txt", header = F, sep = "\t")
 
 RR.list <- list()
 for (i in 1:nrow(RR.QTLs)){
@@ -119,19 +117,18 @@ for (i in 1:nrow(RR.QTLs)){
 
 RR.QTLs$NoDays <- unlist(lapply(RR.list, function(x) length(x)))
 
-RR.QTLs.perst <- RR.QTLs[RR.QTLs$NoDays == 20 ,] #QTLs detected on all days, 128
-RR.QTLs.mid.long <- RR.QTLs[(RR.QTLs$NoDays > 12 & RR.QTLs$NoDays < 20) ,] #32
-RR.QTLs.mid.sh <- RR.QTLs[(RR.QTLs$NoDays > 5 & RR.QTLs$NoDays < 13) ,] #55
-RR.QTLs.short <- RR.QTLs[RR.QTLs$NoDays < 6 ,] #127
+RR.QTLs.perst <- RR.QTLs[RR.QTLs$NoDays == 20 ,]; dim(RR.QTLs.perst) #QTLs detected on all days, 13
+RR.QTLs.mid.long <- RR.QTLs[(RR.QTLs$NoDays > 12 & RR.QTLs$NoDays < 20) ,]; dim(RR.QTLs.mid.long) #5
+RR.QTLs.mid.sh <- RR.QTLs[(RR.QTLs$NoDays > 5 & RR.QTLs$NoDays < 13) ,]; dim(RR.QTLs.mid.sh) #6
+RR.QTLs.short <- RR.QTLs[RR.QTLs$NoDays < 6 ,]; dim(RR.QTLs.short) #127
 
 
 #Get the signficant SNPs
 library(reshape2)
 
-RR.p <- as.matrix( read.table("/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/RR/pvals.txt", sep = "\t", header = T, row.names = 1) )
-RR.p <- RR.p + 1E-10
+RR.p <- as.matrix( read.table("DataAndCode/CompCluster/RR/pval.mat.txt", sep = "\t", header = T, row.names = 1) )
 
-MAP <- read.table("/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/MAP_maf0.05.txt", header = F, sep = "\t")
+MAP <- read.table("DataAndCode/CompCluster/MAP_maf0.05.txt", header = F, sep = "\t")
 
 row.names(RR.p) <- MAP$V2
 
@@ -155,13 +152,13 @@ RR.p <- dcast(RR.p, SNP + CHR + BP1 + BP2 ~ Day, value.var = "P")
 RR.mat <- matrix(0, ncol = 20, nrow = nrow(RR.QTLs.perst))
 for (i in 1:nrow(RR.QTLs.perst)){
   tmp.QTL <- RR.QTLs.perst[i,]
-  tmp.P <- RR.p[(RR.p$CHR %in% tmp.QTL$V1 & RR.p$BP1 <= tmp.QTL$V3 & RR.p$BP1 >= tmp.QTL$V2) ,]
-  RR.mat[i,] <- apply(tmp.P[5:24], 2, min, rm.na = T)
+  tmp.P <- RR.p[(RR.p$CHR %in% tmp.QTL$V1 & RR.p$BP1 <= tmp.QTL$V3 & RR.p$BP1 >= tmp.QTL$V2) ,] #subset for p values
+  RR.mat[i,] <- apply(tmp.P[5:24], 2, min, rm.na = T) #find smallest p value across all time points
 }
 
 RR.mat <- cbind(RR.QTLs.perst[1:3], RR.mat)
-RR.mat$min <- apply(RR.mat[4:23], 1, min)
-RR.mat.per <- RR.mat[order(RR.mat$min) ,][1:20,]
+RR.mat$min <- apply(RR.mat[4:23], 1, min) #find the lowest p-value for each QTL
+RR.mat.per <- RR.mat[order(RR.mat$min) ,]
 
 
 #Mid-long duration SNPs
@@ -175,10 +172,10 @@ for (i in 1:nrow(RR.QTLs.mid.long)){
 RR.mat <- cbind(RR.QTLs.mid.long[1:3], RR.mat)
 RR.mat$min <- apply(RR.mat[4:23], 1, min)
 
-Cnt.day.ML <- apply(RR.mat[4:23], 2, function(x) sum(x < 1e-04)/32)
+Cnt.day.ML <- apply(RR.mat[4:23], 2, function(x) sum(x < 1e-04)/5)
 plot(1:20, Cnt.day.ML, type = "l", ylim = c(0, 1))
 
-RR.mat.ML <- RR.mat[order(RR.mat$min) ,][1:20,]
+RR.mat.ML <- RR.mat[order(RR.mat$min) ,]
 
 
 
@@ -194,10 +191,10 @@ for (i in 1:nrow(RR.QTLs.mid.sh)){
 RR.mat <- cbind(RR.QTLs.mid.sh[1:3], RR.mat)
 RR.mat$min <- apply(RR.mat[4:23], 1, min)
 
-Cnt.day.MS <- apply(RR.mat[4:23], 2, function(x) sum(x < 1e-04)/55)
+Cnt.day.MS <- apply(RR.mat[4:23], 2, function(x) sum(x < 1e-04)/6)
 plot(1:20, Cnt.day.MS, type = "l", ylim = c(0, 1))
 
-RR.mat.MS <- RR.mat[order(RR.mat$min) ,][1:20,]
+RR.mat.MS <- RR.mat[order(RR.mat$min) ,]
 
             
 
@@ -213,15 +210,15 @@ for (i in 1:nrow(RR.QTLs.short)){
 RR.mat <- cbind(RR.QTLs.short[1:3], RR.mat)
 RR.mat$min <- apply(RR.mat[4:23], 1, min)
 
-Cnt.day.S <- apply(RR.mat[4:23], 2, function(x) sum(x < 1e-04)/127)
-plot(1:20, Cnt.day.MS, type = "l", ylim = c(0, 1))
+Cnt.day.S <- apply(RR.mat[4:23], 2, function(x) sum(x < 1e-04)/2)
+plot(1:20, Cnt.day.S, type = "l", ylim = c(0, 1))
 
-RR.mat.S <- RR.mat[order(RR.mat$min) ,][1:20,]
+RR.mat.S <- RR.mat[order(RR.mat$min) ,]
 ```
 
 ## Plot frequencies for each class
 ```{r plot frequencies for each class}
-#pdf("/Users/malachycampbell/Desktop/RRgwas_git/Figures/QTL.freq.pdf", h = 1.9, w=3.2, useDingbats = F, pointsize = 10)
+pdf("DataAndCode/Figures/QTL.freq.pdf", h = 1.9, w=3.2, useDingbats = F, pointsize = 10)
 par(xpd = T, mar=c(3,3,.1,.75)+ c(0,0,0,4), mgp=c(1.8,0.5,0))
 
 plot(1:20, Cnt.day.ML, type = "l", ylim = c(0, 1), col = "black", ylab = "Frequency", xlab = "Days of Imaging")
@@ -229,7 +226,7 @@ lines(1:20, Cnt.day.MS, col = "grey60", lty = 2)
 lines(1:20, Cnt.day.S, col = "red", lty = 3)
 
 legend(21, 0.75, c("Long", "Mid", "Short"), col = c("black", "grey60", "red"), lty = 1:3, bty = 'n', cex = 0.75, pt.cex = 0.65)
-#dev.off()
+dev.off()
 ```
 
 ## Heatmap
@@ -239,7 +236,12 @@ P.mat.ML <- round(-log(RR.mat.ML[4:23], 10), 2)
 P.mat.MS <- round(-log(RR.mat.MS[4:23], 10), 2)
 P.mat.S <- round(-log(RR.mat.S[4:23], 10), 2)
 
-P.mat.all <- rbind(P.mat.per[1:5,], P.mat.ML[1:5,], P.mat.MS[1:5,], P.mat.S[1:5,])
+P.mat.all <- rbind(P.mat.per, P.mat.ML, P.mat.MS, P.mat.S)
+RR.mat.all <- rbind(RR.mat.per, RR.mat.ML, RR.mat.MS, RR.mat.S)
+
+colnames(RR.mat.all) <- c("CHR", "QTLstart", "QTLend", paste0("p.value_Day", 1:20, "MIN"))
+RR.mat.all$MIN <- NULL
+write.csv(RR.mat.all, "DataandCode/Figures/RR_GWASresults_QTL.csv", row.names = F)
 
 library(RColorBrewer)
 library(pheatmap)
@@ -262,12 +264,12 @@ pheatmap(P.mat.all,
          number_color = "black",
          fontsize_number = 3.5,
          breaks = myBreaks,
-         filename = "/Users/malachycampbell/Desktop/RRgwas_git/Figures/Fig3.pdf",
+         filename = "DataAndCode/Figures/Fig3.pdf",
          width = 7,
          height = 5,
          show_rownames = T,
          show_colnames = T,
-         labels_row = paste0(RR.mat$V1, ": ", RR.mat$V2, " - ", RR.mat$V3),
+         labels_row = paste0(RR.mat.all$V1, ": ", RR.mat.all$V2, " - ", RR.mat.all$V3),
          labels_col = seq(1:20)
 )
 ```

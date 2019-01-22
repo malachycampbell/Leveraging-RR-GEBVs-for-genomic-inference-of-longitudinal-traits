@@ -13,12 +13,12 @@ output:
 ---
 
 ```{r setup, include=FALSE, echo = F}
-knitr::opts_knit$set(root.dir = '~/Desktop/RRgwas_git/RR_GP/')
+knitr::opts_knit$set(root.dir = '~/Documents/Dropbox/Work/Manuscripts/2018_RandomRegressionGWAS/ThePlantGenome/Revision/New Analysis/')
 ```
 
 # Background
 The purpose of this script is to predict genomic breeding values (GEBVs) using a conventional single time point (TP) gBLUP model. The TP model is 
-$$\mathbf{y} = \mathbf{Zu} + \mathbf{Qs} +  \mathbf{e}$$
+$$\mathbf{y} = \mathbf{Xb} + \mathbf{Zu} + \mathbf{Qs} +  \mathbf{e}$$
 where $\mathbf{y}$ is PSA at each of the 20 days; $\mathbf{Z}$ and $\mathbf{Q}$ are incidence matrices corresponding to the random additive genetic effect ($\mathbf{u}$), and random experimental effect ($\mathbf{s}$), respectively; and $\mathbf{e}$ is the random residual error.
 Here  we assume the random terms are as follows $\mathbf{u} \sim N(0, \mathbf{G}\sigma_g^2)$, $\mathbf{s} \sim N(0, \mathbf{I}\sigma_s^2)$, and $\mathbf{e} \sim N(0, \mathbf{I}\sigma_e^2)$. A genomic relationship matrix ($\mathbf{G}$) was calculated as described for the RR approach.
 
@@ -29,7 +29,6 @@ Here is the .as file for ASREML.
 SINGLE TP
  NID !A
  Exp !A
- Rep 2
  Y1 !/100000
  Y2 !/100000
  Y3 !/100000
@@ -51,7 +50,7 @@ SINGLE TP
  Y19 !/100000
  Y20 !/100000
 G2.grm
-PSA.cleaned.csv !SKIP 1 !MAXITER 1000 !EXTRA 100 !WORKSPACE 6144 !ASUV !DOPATH 1
+PSA.cleaned.mn.csv !SKIP 1 !MAXITER 1000 !EXTRA 100 !WORKSPACE 6144 !SIGMAPAR !DOPART 1
 
 !PATH 1
 $1 ~ mu !r Exp grm(NID)
@@ -59,7 +58,7 @@ $1 ~ mu !r Exp grm(NID)
 
 Here is how it was run.
 ```{bash run asreml}
-cd /Users/malachycampbell/Desktop/RRgwas_git/TP_GP/
+cd TP_GP
 
 asreml TP.as
 ```

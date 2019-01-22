@@ -13,7 +13,7 @@ output:
 ---
 
 ```{r setup, include=FALSE, echo = F}
-knitr::opts_knit$set(root.dir = '~/Desktop/RRgwas_git/RR_GP/')
+knitr::opts_knit$set(root.dir = '/Users/malachycampbell/Documents/Dropbox/Work/Manuscripts/2018_RandomRegressionGWAS/ThePlantGenome/Revision/New Analysis/')
 ```
 
 # Background
@@ -36,45 +36,49 @@ $$BLUP(\boldsymbol{\beta}) = \mathbf{W_{sc}'}(\mathbf{W_{sc}W_{sc}'})^{-1}BLUP(\
 Given the relationship between BLUP of breeding values and marker effects, this script will calcualte the marker effects from GEBVs.
 ```{r load RR files}
 library(reshape2)
-GEBVs <- read.csv("/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/RR_GEBVs.csv")
+GEBVs <- read.csv("DataAndCode/RR_GP/RR_GEBVs.csv")
 
 #convert it to n x t, where n is the number of accessions
 GEBVs <- dcast(GEBVs, NSFTV.ID ~ DayOfImaging, value.var = "gBLUP")
 
-Zsc <- t(as.matrix(read.table("/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/Zsc.txt", sep = "\t", header =T) ))
+Zsc <- t(as.matrix(read.table("DataAndCode/CompCluster/Zsc.txt", sep = "\t", header =T) ))
 Zsc <- Zsc[match(GEBVs$NSFTV.ID, row.names(Zsc)) ,]
 sum(GEBVs$NSFTV.ID == row.names(Zsc))
 
-G <- as.matrix(read.table("/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/G.mat.txt", sep = "\t", header =T) )
+G <- as.matrix(read.table("DataAndCode/CompCluster/G.txt", sep = "\t", header =T) )
 sum(GEBVs$NSFTV.ID == colnames(G))
 
 GEBVs$NSFTV.ID <- NULL
 ```
 
 ```{r solve for marker effects from RR GEBVs}
+library(MASS)
 Eff.mat <- matrix(0, nrow = ncol(Zsc), ncol = 20)
 
 for (i in 1:20){
-  Eff.mat[,i] <- t(Zsc) %*% solve(G) %*% matrix(GEBVs[,i], ncol=1, nrow=nrow(Zsc))
+  Eff.mat[,i] <- t(Zsc) %*% ginv(G) %*% matrix(GEBVs[,i], ncol=1, nrow=nrow(Zsc))
 }
 
-write.csv(Eff.mat, "/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/RR/Eff.mat.csv", row.names = F)
+write.csv(Eff.mat, "DataAndCode/CompCluster/RR/Eff.mat.csv", row.names = F)
 ```
 
 
 #Estimating marker effects for TP-derived GEBVs
 ```{r solve for marker effects from TP GEBVs}
-setwd("/Users/malachycampbell/Desktop/RRgwas_git/TP_GP/")
-
-FILES <- paste0("TPY", 1:20, ".sln")
+FILES <- paste0("DataAndCode/TP_GP/TPY", 1:20, ".sln")
 
 Eff.mat.TP <- matrix(0, nrow = ncol(Zsc), ncol = 20)
 
 for (i in 1:20){
   tmp <- read.table(FILES[i], sep = "", header = T, nrow = nrow(read.table(FILES[i], sep = "", header = T)))
   tmp <- tmp[grep("NSFTV_", tmp$Level) ,]
-  #Eff.mat[,i] <- t(Zsc) %*% solve(G) %*% matrix(ghat.t.y[,i], ncol=1, nrow=nrow(Zsc))
-  Eff.mat.TP[,i] <- t(Zsc) %*% solve(G) %*% matrix(tmp$Effect, ncol=1, nrow=nrow(Zsc))
+  if(sum(tmp$Level == colnames(G)) == 357 && sum(tmp$Level == row.names(Zsc)) == 357){
+    #Eff.mat[,i] <- t(Zsc) %*% solve(G) %*% matrix(ghat.t.y[,i], ncol=1, nrow=nrow(Zsc))
+    Eff.mat.TP[,i] <- t(Zsc) %*% ginv(G) %*% matrix(tmp$Effect, ncol=1, nrow=nrow(Zsc))
+  }else{
+    print("Order is wrong.")
+    break()
+  }
 }
 
-write.csv(Eff.mat.TP, "/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/TP/Eff.mat.csv", row.names = F)
+write.csv(Eff.mat.TP, "DataAndCode/CompCluster/TP/Eff.mat.csv", row.names = F)
