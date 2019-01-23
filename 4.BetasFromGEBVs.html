@@ -564,11 +564,6 @@ text-align: center;
 font-style: italic;
 font-size: 90%;
 }
-img.mfp-img {
-background-color: #FFFFFF;
-padding: 0px;
-margin: 40px auto;
-}
 .mfp-figure {
 min-width: 250px;
 }
@@ -830,7 +825,7 @@ img {
 </div>
 
 <div id="content">
-<section id="background" class="level1">
+<div id="background" class="section level1">
 <h1>Background</h1>
 <p>Here, we’ll take the GEBVs obtained with the RR and TP approaches and back solve to get the marker effects.</p>
 <p>Recall that GEBVs (<span class="math inline">\(\mathbf{\hat{g} }\)</span>) can be parameterized as <span class="math inline">\(\mathbf{\hat{g} } = \boldsymbol{\hat{\beta} W_{sc} }\)</span>, where <span class="math inline">\(\mathbf{W_{sc}}\)</span> is a matrix of marker genotypes, as defined above, and <span class="math inline">\(\boldsymbol{\hat{\beta}}\)</span> is a vector of allele substitution effects. <span class="math inline">\(\boldsymbol{\hat{\beta}}\)</span> can be obtained using best linear unbiased prediction (BLUP) by</p>
@@ -839,56 +834,67 @@ img {
 <p><span class="math display">\[BLUP(\mathbf{g}) = \left [ \mathbf{I} + \mathbf{G}^{-1} \frac{\sigma^2_e}{\sigma^2_g} \right ]^{-1} \mathbf{y}\]</span></p>
 <p>BLUP of marker effects can be obtained using the following linear transformation</p>
 <p><span class="math display">\[BLUP(\boldsymbol{\beta}) = \mathbf{W_{sc}'}(\mathbf{W_{sc}W_{sc}'})^{-1}BLUP(\mathbf{g})\]</span></p>
-<p>#Estimating marker effects for RR-derived GEBVs Given the relationship between BLUP of breeding values and marker effects, this script will calcualte the marker effects from GEBVs.</p>
+</div>
+<div id="estimating-marker-effects-for-rr-derived-gebvs" class="section level1">
+<h1>Estimating marker effects for RR-derived GEBVs</h1>
+<p>Given the relationship between BLUP of breeding values and marker effects, this script will calcualte the marker effects from GEBVs.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">library</span>(reshape2)</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2">GEBVs &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/RR_GEBVs.csv&quot;</span>)</a>
+<a class="sourceLine" id="cb1-2" data-line-number="2">GEBVs &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">&quot;DataAndCode/RR_GP/RR_GEBVs.csv&quot;</span>)</a>
 <a class="sourceLine" id="cb1-3" data-line-number="3"></a>
 <a class="sourceLine" id="cb1-4" data-line-number="4"><span class="co">#convert it to n x t, where n is the number of accessions</span></a>
 <a class="sourceLine" id="cb1-5" data-line-number="5">GEBVs &lt;-<span class="st"> </span><span class="kw">dcast</span>(GEBVs, NSFTV.ID <span class="op">~</span><span class="st"> </span>DayOfImaging, <span class="dt">value.var =</span> <span class="st">&quot;gBLUP&quot;</span>)</a>
 <a class="sourceLine" id="cb1-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb1-7" data-line-number="7">Zsc &lt;-<span class="st"> </span><span class="kw">t</span>(<span class="kw">as.matrix</span>(<span class="kw">read.table</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/Zsc.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">header =</span>T) ))</a>
+<a class="sourceLine" id="cb1-7" data-line-number="7">Zsc &lt;-<span class="st"> </span><span class="kw">t</span>(<span class="kw">as.matrix</span>(<span class="kw">read.table</span>(<span class="st">&quot;DataAndCode/CompCluster/Zsc.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">header =</span>T) ))</a>
 <a class="sourceLine" id="cb1-8" data-line-number="8">Zsc &lt;-<span class="st"> </span>Zsc[<span class="kw">match</span>(GEBVs<span class="op">$</span>NSFTV.ID, <span class="kw">row.names</span>(Zsc)) ,]</a>
-<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">sum</span>(GEBVs<span class="op">$</span>NSFTV.ID <span class="op">==</span><span class="st"> </span><span class="kw">row.names</span>(Zsc))</a></code></pre></div>
-<pre><code>## [1] 357</code></pre>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">G &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(<span class="kw">read.table</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/G.mat.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">header =</span>T) )</a>
-<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">sum</span>(GEBVs<span class="op">$</span>NSFTV.ID <span class="op">==</span><span class="st"> </span><span class="kw">colnames</span>(G))</a></code></pre></div>
-<pre><code>## [1] 357</code></pre>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">GEBVs<span class="op">$</span>NSFTV.ID &lt;-<span class="st"> </span><span class="ot">NULL</span></a></code></pre></div>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">Eff.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc), <span class="dt">ncol =</span> <span class="dv">20</span>)</a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">  Eff.mat[,i] &lt;-<span class="st"> </span><span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span><span class="kw">solve</span>(G) <span class="op">%*%</span><span class="st"> </span><span class="kw">matrix</span>(GEBVs[,i], <span class="dt">ncol=</span><span class="dv">1</span>, <span class="dt">nrow=</span><span class="kw">nrow</span>(Zsc))</a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">}</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb6-7" data-line-number="7"><span class="kw">write.csv</span>(Eff.mat, <span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/RR/Eff.mat.csv&quot;</span>, <span class="dt">row.names =</span> F)</a></code></pre></div>
-<p>#Estimating marker effects for TP-derived GEBVs</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="kw">setwd</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/TP_GP/&quot;</span>)</a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb7-3" data-line-number="3">FILES &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;TPY&quot;</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="st">&quot;.sln&quot;</span>)</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">Eff.mat.TP &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc), <span class="dt">ncol =</span> <span class="dv">20</span>)</a>
-<a class="sourceLine" id="cb7-6" data-line-number="6"></a>
-<a class="sourceLine" id="cb7-7" data-line-number="7"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
-<a class="sourceLine" id="cb7-8" data-line-number="8">  tmp &lt;-<span class="st"> </span><span class="kw">read.table</span>(FILES[i], <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>, <span class="dt">header =</span> T, <span class="dt">nrow =</span> <span class="kw">nrow</span>(<span class="kw">read.table</span>(FILES[i], <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>, <span class="dt">header =</span> T)))</a>
-<a class="sourceLine" id="cb7-9" data-line-number="9">  tmp &lt;-<span class="st"> </span>tmp[<span class="kw">grep</span>(<span class="st">&quot;NSFTV_&quot;</span>, tmp<span class="op">$</span>Level) ,]</a>
-<a class="sourceLine" id="cb7-10" data-line-number="10">  <span class="co">#Eff.mat[,i] &lt;- t(Zsc) %*% solve(G) %*% matrix(ghat.t.y[,i], ncol=1, nrow=nrow(Zsc))</span></a>
-<a class="sourceLine" id="cb7-11" data-line-number="11">  Eff.mat.TP[,i] &lt;-<span class="st"> </span><span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span><span class="kw">solve</span>(G) <span class="op">%*%</span><span class="st"> </span><span class="kw">matrix</span>(tmp<span class="op">$</span>Effect, <span class="dt">ncol=</span><span class="dv">1</span>, <span class="dt">nrow=</span><span class="kw">nrow</span>(Zsc))</a>
-<a class="sourceLine" id="cb7-12" data-line-number="12">}</a>
-<a class="sourceLine" id="cb7-13" data-line-number="13"></a>
-<a class="sourceLine" id="cb7-14" data-line-number="14"><span class="kw">write.csv</span>(Eff.mat.TP, <span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/TP/Eff.mat.csv&quot;</span>, <span class="dt">row.names =</span> F)</a></code></pre></div>
-</section>
+<a class="sourceLine" id="cb1-9" data-line-number="9"><span class="kw">sum</span>(GEBVs<span class="op">$</span>NSFTV.ID <span class="op">==</span><span class="st"> </span><span class="kw">row.names</span>(Zsc))</a>
+<a class="sourceLine" id="cb1-10" data-line-number="10"></a>
+<a class="sourceLine" id="cb1-11" data-line-number="11">G &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(<span class="kw">read.table</span>(<span class="st">&quot;DataAndCode/CompCluster/G.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">header =</span>T) )</a>
+<a class="sourceLine" id="cb1-12" data-line-number="12"><span class="kw">sum</span>(GEBVs<span class="op">$</span>NSFTV.ID <span class="op">==</span><span class="st"> </span><span class="kw">colnames</span>(G))</a>
+<a class="sourceLine" id="cb1-13" data-line-number="13"></a>
+<a class="sourceLine" id="cb1-14" data-line-number="14">GEBVs<span class="op">$</span>NSFTV.ID &lt;-<span class="st"> </span><span class="ot">NULL</span></a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">library</span>(MASS)</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">Eff.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc), <span class="dt">ncol =</span> <span class="dv">20</span>)</a>
+<a class="sourceLine" id="cb2-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">  Eff.mat[,i] &lt;-<span class="st"> </span><span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span><span class="kw">ginv</span>(G) <span class="op">%*%</span><span class="st"> </span><span class="kw">matrix</span>(GEBVs[,i], <span class="dt">ncol=</span><span class="dv">1</span>, <span class="dt">nrow=</span><span class="kw">nrow</span>(Zsc))</a>
+<a class="sourceLine" id="cb2-6" data-line-number="6">}</a>
+<a class="sourceLine" id="cb2-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb2-8" data-line-number="8"><span class="kw">write.csv</span>(Eff.mat, <span class="st">&quot;DataAndCode/CompCluster/RR/Eff.mat.csv&quot;</span>, <span class="dt">row.names =</span> F)</a></code></pre></div>
+</div>
+<div id="estimating-marker-effects-for-tp-derived-gebvs" class="section level1">
+<h1>Estimating marker effects for TP-derived GEBVs</h1>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">FILES &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;DataAndCode/TP_GP/TPY&quot;</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="st">&quot;.sln&quot;</span>)</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">Eff.mat.TP &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc), <span class="dt">ncol =</span> <span class="dv">20</span>)</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb3-5" data-line-number="5"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
+<a class="sourceLine" id="cb3-6" data-line-number="6">  tmp &lt;-<span class="st"> </span><span class="kw">read.table</span>(FILES[i], <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>, <span class="dt">header =</span> T, <span class="dt">nrow =</span> <span class="kw">nrow</span>(<span class="kw">read.table</span>(FILES[i], <span class="dt">sep =</span> <span class="st">&quot;&quot;</span>, <span class="dt">header =</span> T)))</a>
+<a class="sourceLine" id="cb3-7" data-line-number="7">  tmp &lt;-<span class="st"> </span>tmp[<span class="kw">grep</span>(<span class="st">&quot;NSFTV_&quot;</span>, tmp<span class="op">$</span>Level) ,]</a>
+<a class="sourceLine" id="cb3-8" data-line-number="8">  <span class="cf">if</span>(<span class="kw">sum</span>(tmp<span class="op">$</span>Level <span class="op">==</span><span class="st"> </span><span class="kw">colnames</span>(G)) <span class="op">==</span><span class="st"> </span><span class="dv">357</span> <span class="op">&amp;&amp;</span><span class="st"> </span><span class="kw">sum</span>(tmp<span class="op">$</span>Level <span class="op">==</span><span class="st"> </span><span class="kw">row.names</span>(Zsc)) <span class="op">==</span><span class="st"> </span><span class="dv">357</span>){</a>
+<a class="sourceLine" id="cb3-9" data-line-number="9">    <span class="co">#Eff.mat[,i] &lt;- t(Zsc) %*% solve(G) %*% matrix(ghat.t.y[,i], ncol=1, nrow=nrow(Zsc))</span></a>
+<a class="sourceLine" id="cb3-10" data-line-number="10">    Eff.mat.TP[,i] &lt;-<span class="st"> </span><span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span><span class="kw">ginv</span>(G) <span class="op">%*%</span><span class="st"> </span><span class="kw">matrix</span>(tmp<span class="op">$</span>Effect, <span class="dt">ncol=</span><span class="dv">1</span>, <span class="dt">nrow=</span><span class="kw">nrow</span>(Zsc))</a>
+<a class="sourceLine" id="cb3-11" data-line-number="11">  }<span class="cf">else</span>{</a>
+<a class="sourceLine" id="cb3-12" data-line-number="12">    <span class="kw">print</span>(<span class="st">&quot;Order is wrong.&quot;</span>)</a>
+<a class="sourceLine" id="cb3-13" data-line-number="13">    <span class="cf">break</span>()</a>
+<a class="sourceLine" id="cb3-14" data-line-number="14">  }</a>
+<a class="sourceLine" id="cb3-15" data-line-number="15">}</a>
+<a class="sourceLine" id="cb3-16" data-line-number="16"></a>
+<a class="sourceLine" id="cb3-17" data-line-number="17"><span class="kw">write.csv</span>(Eff.mat.TP, <span class="st">&quot;DataAndCode/CompCluster/TP/Eff.mat.csv&quot;</span>, <span class="dt">row.names =</span> F)</a></code></pre></div>
+</div>
 </div>
 
 
     </div>
     <div class="col-md-2">
-      <div id="toc">
+            <div id="toc">
       	<button type="button" class="close">×</button>
         <ul>
         <li><a href="#background">Background</a></li>
+        <li><a href="#estimating-marker-effects-for-rr-derived-gebvs">Estimating marker effects for RR-derived GEBVs</a></li>
+        <li><a href="#estimating-marker-effects-for-tp-derived-gebvs">Estimating marker effects for TP-derived GEBVs</a></li>
         </ul>
       </div>
-    </div>
+          </div>
   </div>
 </div>
 
@@ -910,6 +916,7 @@ $(document).ready(function () {
   $('#content').magnificPopup({
 	      type:'image',
 	      closeOnContentClick: false,
+	      closeBtnInside: false,
 	      delegate: 'img',
 	      gallery: {enabled: true },
 	      image: {

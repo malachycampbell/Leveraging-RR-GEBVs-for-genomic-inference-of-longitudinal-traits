@@ -66,7 +66,7 @@ For each term, we define a matrix of Legendre polynomials evaluated at each time
 $\mathbf{Z^o}$ and $\mathbf{Q^o}$ are incidence matrices that allocate temporal records to individuals and experiments respectively. The order of $\mathbf{Z^o}$ is $q*e \times q$ and $\mathbf{Q^o}$ is $q*e \times e$ ($q$ is the number of individuals, $e$ is the number of experiments).
 
 The functions below were adapted from Mrode (2005) by [Gota Morota](http://morotalab.org/Mrode2005/rr/rr.html#section00020000000000000000)
-```{r load functions for RR with leg polynomials, echo=FALSE}
+```{r load functions for RR with leg polynomials, echo = T, eval = F}
 ##Return coefficient matrix (lambda) of n-th order Legendre polynomials. Scaling method implemented by Gengler et. al. (1999) converts constant Legendre polynomial coefficients into 1
 `legendre` <-
   function(n, gengler){
@@ -135,7 +135,7 @@ stdtime <- function(t, n, tmax, tmin){
 ```
 
 
-```{r}
+```{r, echo = T, eval = F}
 TPs <- 20
 Inds <- 357
 Ex <- 3
@@ -180,14 +180,16 @@ By rearranging the equation above we obtain
 \end{align}
 
 To calculate the variance of the SNP effects, we can introduce equation (13) into equation (9) giving
+
 \begin{align}
 \textrm{Var(} \hat{\boldsymbol{\beta}} \textrm{)} &= \mathbf{W'_{sc} G^{-1}} (\mathbf{G} \sigma_g^2 - \mathbf{C^{22}} \sigma^2_e) \mathbf{G^{-1} W_{sc} } \\
 &= \mathbf{W'_{sc} G^{-1} W_{sc}} \sigma_g^2 - \mathbf{W'_{sc} G^{-1} C^{22}} \mathbf{G^{-1} W_{sc} \sigma^2_e }
-\label{eq:13}
 \end{align}
+
 At each time point, $\sigma_g^2$ is extracted from the corresponding the diagonal element of $\boldsymbol{\Phi_g \Omega \Phi'_g}$.
 
 $\mathbf{C^{22}}$ is obtained by inverting the coefficient matrix of the MME (equation 3), and is of order $q*k_g \times q*k_g$. The diagonal elements of $\mathbf{C^{22}}$ contain the PEV for the RR coefficients for the additive genetic effect. To obtain the variance of SNP effects at each time point $\mathbf{C^{22}}$ must be transformed so that the diagonal elements correspond to the PEV for GEBVs at each time point. We will refer to this $q*t \times q*t$ matrix as $\mathbf{C^{22}}^*$. Following \citep{mrode2014linear}, PEV for individual $i$ at each time point can be obtained by taking the diagonal elements of $\textrm{PEV}_i = \boldsymbol{\Phi_g} \mathbf{C_{ii}} \boldsymbol{\Phi_g'}$. $\mathbf{C_{ii}}$ is a $3 \times 3$ submatrix of RR coefficients from $\mathbf{C_{22}}$ for individual $i$. To extend this approach to the full $\mathbf{C_{22}}$ matrix, we construct a block matrix of $\boldsymbol{\Phi_{g}}$ ($\boldsymbol{\Phi^*_{g}}$) via $\boldsymbol{\Phi^*_{g}} = \mathbf{I} \otimes \boldsymbol{\Phi_{g}}$ and obtain $\boldsymbol{C^{22*}}$ by
+
 \begin{align}
 \boldsymbol{C^{22*}} &= \boldsymbol{\Phi_{g}^*} \boldsymbol{C^{22}} \boldsymbol{\Phi_{g}^*}'
 \end{align}
@@ -196,7 +198,7 @@ Thus, $\mathbf{C_{22}^*}$ is $q*t \times q*t$ and the diagonal elements are the 
 
 ### Setting up MME and obtaining C22*
 
-```{r}
+```{r, echo = T, eval = F}
 Resvar <- diag(20)
 diag(Resvar) <- c(1.37E-03, 1.11E-03, 1.87E-03, 3.00E-03, 4.81E-03,
                   7.08E-03, 1.04E-02, 1.33E-02, 1.78E-02, 2.40E-02,
@@ -214,7 +216,7 @@ P <- matrix(c(0.603125E-01, 0.400317E-01,
               0.400317E-01, 0.267477E-01), 2, 2)
 ```
 
-```{r}
+```{r, echo = T, eval = F}
 library(MASS)
 Idnt <- matrix(0, ncol = Inds, nrow = Inds)
 diag(Idnt) <- 1
@@ -228,8 +230,8 @@ Omega.i <- ginv(Omega)
 P.i <- ginv(P)
 ```
 
-MME
-```{r}
+Set up the MME.
+```{r, echo = T, eval = F}
 G <- as.matrix(read.table("DataAndCode/CompCluster/G.txt", sep = "\t", header = T))
 Ginv <- ginv(G)
 
@@ -266,16 +268,16 @@ rm(BotRow)
 
 ### Getting p-values at each time point from C22*
 
-```{r}
+```{r, echo = T, eval = F}
 Eff.mat <- as.matrix(read.csv("DataAndCode/CompCluster/RR/Eff.mat.csv", header = T) )
 Zsc <- t( as.matrix (read.table("Zsc.txt", header = T, sep = "\t") ) )
 ```
 
-```{r}
+```{r, echo = T, eval = F}
 Gvar <- diag(PhiG %*% Omega %*% t(PhiG))
 ```
 
-```{r}
+```{r, echo = T, eval = F}
 #Define all matrices to store the results
 pvalue.mat <- matrix(0, ncol = 20, nrow = ncol(Zsc))
 SD.mat <- matrix(0, ncol = 20, nrow = ncol(Zsc))
@@ -357,13 +359,13 @@ $\mathbf{C^{22}}$ is obtained by inverting the MME \ref{eq:TP.MME}.
 
 ### Extracting variance components from asreml output
 Recall, that the TP approach produces 20 individual files. The code chunks below parses those files, extracts the variance components, and stores them for later use.
-```{bash varcomp, eval = T}
+```{bash varcomp, echo = T, eval = F}
 cd TP_GP/
 for file in *.asr; do less $file | grep -A6 "Model_Term" | sed -n -e 1,3p -e 5p | tr -s " " > $file.varcomp.txt; done
 ```
 
 Read in the parsed asr file and extract the variance components. 
-```{r TP var comp, eval = T}
+```{r TP var comp, echo = T, eval = F}
 rm(list = ls())
 
 library(reshape2)
@@ -391,7 +393,7 @@ write.csv(Var.TP, "DataandCode/CompCluster/TP/VarComps.csv", row.names=T)
 
 ### Setting up MME for TP approach and running GWAS from GEBVs
 
-```{r}
+```{r, echo = T, eval = F}
 library(MASS)
 G <- as.matrix(read.table("DataAndCode/CompCluster/G.txt", sep = "\t", header = T))
 PSA.df <- read.csv("DataandCode/CompCluster/TP/PSA.cleaned.mn.csv")
@@ -400,7 +402,7 @@ Eff.mat <- as.matrix(read.csv("DataandCode/CompCluster/TP/Eff.mat.csv", header =
 Zsc <- t( as.matrix (read.table("DataandCode/CompCluster/Zsc.txt", header = T, sep = "\t") ) )
 ```
 
-```{r}
+```{r, echo = T, eval = F}
 #Define all matrices to store the results
 pvalue.mat <- matrix(0, ncol = 20, nrow = ncol(Zsc))
 SD.mat <- matrix(0, ncol = 20, nrow = ncol(Zsc))

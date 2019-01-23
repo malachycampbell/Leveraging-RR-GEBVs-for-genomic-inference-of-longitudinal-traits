@@ -21,7 +21,7 @@ Here we will prep the genotypic data used for all analyses. The 44K SNP data [Zh
 
 # Impute missing data
 This code loads to the 44k SNP data, and imputes the missing markers. The missing markers were replaced with the mode of SNP values.
-```{r impute missing data, echo = T}
+```{r impute missing data, echo = T, eval = F}
 library(BGLR)
 
 FAM <- read.table("DataandCode/RiceDiversity_44K_Genotypes_PLINK/sativas413.fam")[1:2]
@@ -56,7 +56,7 @@ for (j in 1:ncol(W)) {
 
 # Remove markers with low MAF
 Markers with a MAF less than 0.05 were removed. This removed 3,211 markers, leaving a total of 33,690 markers for computing the genomic relationship matrix (GRM).
-```{r remove markers with low MAF, echo = T}
+```{r remove markers with low MAF, echo = T, eval = F}
 #load phenotypic data for 378 accessions
 PSA.df <- read.csv("DataandCode/Phenotypes/PSA.cleaned.mn.csv")
 
@@ -79,7 +79,7 @@ A genomic relationship matrix ($\mathbf{G}$) was calculated using [VanRaden (200
 $$\mathbf{G} = \frac{\mathbf{Z_{sc} Z_{sc}}' }{m}$$
 Here, $\mathbf{Z_{c}}$ is a centered $n \times m$ matrix, where $m$ is 33,564 SNPs and $n$ is the 357 genotyped rice lines. 
 
-```{r GRM, eval = T, echo = T}
+```{r GRM, echo = T, eval = F}
 Zsc <- scale(x=W,center=T,scale=T)
 G <- tcrossprod(Zsc)/ncol(W)
 G <- G + diag(nrow(W))*0.001

@@ -564,11 +564,6 @@ text-align: center;
 font-style: italic;
 font-size: 90%;
 }
-img.mfp-img {
-background-color: #FFFFFF;
-padding: 0px;
-margin: 40px auto;
-}
 .mfp-figure {
 min-width: 250px;
 }
@@ -830,195 +825,148 @@ img {
 </div>
 
 <div id="content">
-<section id="background" class="level1">
+<div id="background" class="section level1">
 <h1>Background</h1>
-<p>The purpose of this script is to predict genomic breeding values (GEBVs) using a random regression model. The RR model is <span class="math display">\[ PSA_{tjk} = \mu + \sum_{k=0}^{2}\phi(t)_{jk}\beta_k + \sum_{k=0}^{2}\phi(t)_{jk} u_{jk} + \sum_{k=0}^{1}\phi(t)_{jk} s_{jk} + e_{tjk}\]</span>. Where <span class="math inline">\(\beta\)</span> is the fixed second-order Legendre polynomial to model the overall trend in the trait overtime, <span class="math inline">\(u_{jk}\)</span> and <span class="math inline">\(s_{jk}\)</span> are the <span class="math inline">\(k^{th}\)</span> random regression coefficients for additive genetic effect and random experiment of line <span class="math inline">\(j\)</span>, and <span class="math inline">\(e_{tjk}\)</span> is the random residual. This model was seelcted through comparisons between several other RR models. The complete process is decribed in our previous paper in Plant Direct and on <a href="https://www.biorxiv.org/content/early/2018/07/12/319897">bioRxiv</a>.</p>
+<p>The purpose of this script is to predict genomic breeding values (GEBVs) using a random regression model. The RR model is <span class="math display">\[ PSA_{tjk} = \sum_{k=0}^{2}\phi(t)_{jk}\beta_k + \sum_{k=0}^{2}\phi(t)_{jk} u_{jk} + \sum_{k=0}^{1}\phi(t)_{jk} s_{jk} + e_{tjk}\]</span>. Where <span class="math inline">\(\beta\)</span> is the fixed second-order Legendre polynomial to model the overall trend in the trait overtime, <span class="math inline">\(u_{jk}\)</span> and <span class="math inline">\(s_{jk}\)</span> are the <span class="math inline">\(k^{th}\)</span> random regression coefficients for additive genetic effect and random experiment of line <span class="math inline">\(j\)</span>, and <span class="math inline">\(e_{tjk}\)</span> is the random residual. This model was seelcted through comparisons between several other RR models. The complete process is decribed in our previous paper in Plant Direct and on <a href="https://www.biorxiv.org/content/early/2018/07/12/319897">bioRxiv</a>.</p>
 <p>Since asreml-R does not allow the use of Legendre polynomials all analysis were done with the standalone version of ASREML. Below the “.as” file is provided as well as the call from the commandline.</p>
-</section>
-<section id="fitting-the-rr-model." class="level1">
+</div>
+<div id="fitting-the-rr-model." class="section level1">
 <h1>Fitting the RR model.</h1>
 <p>Here is the .as file.</p>
 <pre class="asreml"><code>RR model selection
  NID !A
  Exp !A
- Rep 2
- DayOfImaging 20 !I
+ DOI 20 !I
  PSA !/100000
 G2.grm
-PSA.cleaned.csv !SKIP 1 !MAXITER 1000 !EXTRA 100 !WORKSPACE 6144 !ASUV !DOPATH 8
+PSA.cleaned.mn.csv !SKIP 1 !MAXITER 1000 !EXTRA 100 !WORKSPACE 6144 !ASUV !SLOW 10 !DOPART 1
 
-!PATH 1 #Model1
-!ASSIGN USg !&lt; !INIT
-0.254496
-!&gt;
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp leg(DayOfImaging,0).grm(NID) !f mv
-
-!PATH 2 #Model2: 19358.83 -38673.65 -38495.60
+!PATH 1
 !ASSIGN USe !&lt; !INIT
-1.60E-03 1.52E-03 2.06E-03 3.00E-03 4.59E-03 7.12E-03 1.13E-02 1.82E-02 2.86E-02 4.11E-02 6.09E-02 9.26E-02 1.33E-01 1.87E-01 2.69E-01 0.349805 0.503757 0.740224 1.06494 1.52276
+1.37E-03 1.11E-03 1.87E-03 3.00E-03 4.81E-03 7.08E-03 1.04E-02 1.33E-02 1.78E-02 2.40E-02 3.52E-02 5.10E-02 7.23E-02 0.101765 0.1486 0.203647 0.308825 0.484353 0.743772 1.11587
 !&gt;
 !ASSIGN USg !&lt; !INIT
-0.254496
-!&gt;
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,0) $USg).grm(NID) !f mv
-residual id(2142).idh(DayOfImaging $USe)
-
-!PATH 3 #Model3: 
-!ASSIGN USg !&lt; !INIT
-0.254496
-0.200363 0.159373
-!&gt;
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,1) $USg).grm(NID) !f mv
-
-!PATH 4 #Model4: 23273.62 -46499.24 -46305.01
-!ASSIGN USe !&lt; !INIT
-1.60E-03 1.52E-03 2.06E-03 3.00E-03 4.59E-03 7.12E-03 1.13E-02 1.82E-02 2.86E-02 4.11E-02 6.09E-02 9.26E-02 1.33E-01 1.87E-01 2.69E-01 0.349805 0.503757 0.740224 1.06494 1.52276
-!&gt;
-!ASSIGN USg !&lt; !INIT
-0.254496
-0.200363 0.159373
-!&gt;
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,1) $USg).grm(NID) !f mv
-residual id(2142).idh(DayOfImaging $USe)
-
-!PATH 5 #Model5: 
-!ASSIGN USg !&lt; !INIT
-0.667162
-0.587027 0.519362
-0.185506 0.164992 0.526885E-01
-!&gt;
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,2) $USg).grm(NID) !f mv
-
-!PATH 6 #Model6: 24718.93 -49383.86 -49165.35
-!ASSIGN USe !&lt; !INIT
-1.60E-03 1.52E-03 2.06E-03 3.00E-03 4.59E-03 7.12E-03 1.13E-02 1.82E-02 2.86E-02 4.11E-02 6.09E-02 9.26E-02 1.33E-01 1.87E-01 2.69E-01 0.349805 0.503757 0.740224 1.06494 1.52276
-!&gt;
-!ASSIGN USg !&lt; !INIT
-0.254496
-0.200363 0.159373
-0.514966E-01 0.414476E-01 0.109234E-01
-!&gt;
-PSA ~ mu leg(DayOfImaging,2) !r leg(DayOfImaging,0).Exp us(leg(DayOfImaging,2) $USg).grm(NID) !f mv
-residual id(2142).idh(DayOfImaging $USe)
-
-!PATH 7 #Model7: 
-!ASSIGN USg !&lt; !INIT
-0.685896
-0.589393 0.509177
-0.190862 0.166014 0.545985E-01
+0.583091
+0.456320 0.360961
+0.117960 0.945203E-01 0.251287E-01
 !&gt;
 !ASSIGN USp !&lt; !INIT
-0.162107
-0.151803 0.147320
+0.603125E-01 
+0.400317E-01 0.267477E-01
 !&gt;
-PSA ~ mu leg(DayOfImaging,2) !r us(leg(DayOfImaging,1) $USp).Exp us(leg(DayOfImaging,2) $USg).grm(NID) !f mv
-
-!PATH 8 #Model8: 27537.59 -55017.19 -54782.49
-!ASSIGN USe !&lt; !INIT
-1.37E-03 1.22E-03 2.07E-03 3.32E-03 5.32E-03 7.88E-03 1.18E-02 1.53E-02 2.04E-02 2.76E-02 4.03E-02 5.80E-02 8.19E-02 0.114627 0.164452 0.224128 0.336555 0.522506 0.790597 1.17392
-!&gt;
-!ASSIGN USg !&lt; !INIT
-0.629183
-0.495574 0.394557
-0.129607 0.104540 0.281278E-01
-!&gt;
-!ASSIGN USp !&lt; !INIT
-0.594161E-01
-0.392295E-01 0.260640E-01
-!&gt;
-PSA ~ mu leg(DayOfImaging,2) !r us(leg(DayOfImaging,1) $USp).Exp us(leg(DayOfImaging,2) $USg).grm(NID) !f mv
-residual id(2142).idh(DayOfImaging $USe)</code></pre>
+PSA ~ leg(DOI,2) !r us(leg(DOI,1) $USp).Exp us(leg(DOI,2) $USg).grm(NID) !f mv
+residual id(1071).idh(DOI $USe)</code></pre>
 <p>Here is how it was run.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="bu">cd</span> /Users/malachycampbell/Desktop/RRgwas_git/RR_GP/</a>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="bu">cd</span> RR_GP/</a>
 <a class="sourceLine" id="cb2-2" data-line-number="2"></a>
 <a class="sourceLine" id="cb2-3" data-line-number="3"><span class="ex">asreml</span> RR.as</a></code></pre></div>
-<pre><code>## 
-##  ASReml 4.1 [28 Dec 2014]  mr [31 May 2017]  06 Sep 2018 17:11:42
+<pre><code>## bash: line 0: cd: RR_GP/: No such file or directory
+## 
+##  ASReml 4.1 [28 Dec 2014]  mr [31 May 2017]  22 Jan 2019 14:17:12
 ## Registered to: University of Nebraska Lincoln
 ## Serial Number: 40216022,   expiry: 28-feb-2019         
-##  &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt;      ASReml Started  U+S=T         0.01
-##  ASReml 4.1 [28 Dec 2014] RR model selection
-##    Build mr [31 May 2017]   64 bit  Macintosh 64-bit
-##  mr [31 May 2017]     32 Mbyte  RR
-##  Notice: Resize Workspace  !WORKSPACE         6144
-##  &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt;      ASReml Started  U+S=T         0.07
-##  ASReml 4.1 [28 Dec 2014] RR model selection
-##    Build mr [31 May 2017]   64 bit  Macintosh 64-bit
-##  mr [31 May 2017]   6144 Mbyte  RR
-##  PSA   mu leg(DayOfImaging,2) !R us(leg(DayOfImaging,1)).Exp us(leg(DayOfImaging
-##  ,2)).grm(NID) !F mv 
-## 
-##  Univariate analysis of PSA                                             
-##  Summary of 42840 records retained of 42840 read
-## 
-##  Notice: Model term leg(DayOfImaging,2) is not the same term as leg(DayOfImaging,1) but appears to be
-##           similar. Was it meant to be the same term?
-##  Residual id(2142).idh(DayOfImaging) 
-##  Forming    19742 equations:   4 dense.
-##  MODIFY us(leg(DayOfImaging,1)).Exp;us(leg(DayOfImaging,1))  !INIT 0.594161E-01 
-##  0.392295E-01 0.260640E-01 
-##    1    24176   27538.       1.0000    
-## LWAGR
-##  &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt;  Iteration complete  U+S=T        11.18
-##  Notice: LogL values are reported relative to a base of  20000.000    
-##    1 LogL= 7537.55     S2=  1.0000      24176 df
-##  &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt; &gt;&gt;&gt;&gt;&gt;  Iteration complete  U+S=T         4.86
-##    2 LogL= 7537.57     S2=  1.0000      24176 df
-##    3 LogL= 7537.59     S2=  1.0000      24176 df
-##    4 LogL= 7537.59     S2=  1.0000      24176 df
-##    5 LogL= 7537.59     S2=  1.0000      24176 df
-##    6 LogL= 7537.59     S2=  1.0000      24176 df
-##    7 LogL= 7537.59     S2=  1.0000      24176 df
-##    8 LogL= 7537.59     S2=  1.0000      24176 df
-##    9 LogL= 7537.59     S2=  1.0000      24176 df
-##   10 LogL= 7537.59     S2=  1.0000      24176 df
-##   11 LogL= 7537.59     S2=  1.0000      24176 df
-##   12 LogL= 7537.59     S2=  1.0000      24176 df
-##   13 LogL= 7537.59     S2=  1.0000      24176 df
-##   14 LogL= 7537.59     S2=  1.0000      24176 df
-##  DayOfImaging           DIAG_V    1  0.138778E-02  0.138778E-02  21.37   0 P
-##  DayOfImaging           DIAG_V    2  0.121694E-02  0.121694E-02  23.77   0 P
-##  DayOfImaging           DIAG_V    3  0.206460E-02  0.206460E-02  23.71   0 P
-##  DayOfImaging           DIAG_V    4  0.332528E-02  0.332528E-02  23.83   0 P
-##    6 mu                                1             559.50                 
-##    7 leg(DayOfImaging,2)               2           19728.42                 
-##          907  possible outliers: see .res file
-##  Finished: 06 Sep 2018 17:12:55.377   LogL Converged
-##  Finished:                            RR</code></pre>
-</section>
-<section id="solving-for-gebvs-at-each-time-point" class="level1">
+##   Unable to open file RR.as                                                     
+##                                                                                 
+## </code></pre>
+</div>
+<div id="solving-for-gebvs-at-each-time-point" class="section level1">
 <h1>Solving for GEBVs at each time point</h1>
 <p>GEBVs at each time point were be obtained following to <a href="https://books.google.com/books?hl=en&amp;lr=&amp;id=b6MKAwAAQBAJ&amp;oi=fnd&amp;pg=PR5&amp;dq=mrode+linear+models&amp;ots=8Q3ejuZBpU&amp;sig=PVGj2Zi13XD9f_ATZt3Pt4X7r1U">Mrode (2014)</a>. For line <span class="math inline">\(j\)</span> at time <span class="math inline">\(t\)</span>, the GEBVs can be obtained by <span class="math inline">\(\text{gBLUP}_{jt} = \phi_t\hat{u}_j\)</span>; where <span class="math inline">\(\phi_t\)</span> is the row vector of the matrix of Legendre polynomials of order 2.</p>
 <p>The functions below were adapted from Mrode (2005) by <a href="http://morotalab.org/Mrode2005/rr/rr.html#section00020000000000000000">Gota Morota</a></p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="co">##Return coefficient matrix (lambda) of n-th order Legendre polynomials. Scaling method implemented by Gengler et. al. (1999) converts constant Legendre polynomial coefficients into 1</span></a>
+<a class="sourceLine" id="cb4-2" data-line-number="2"><span class="st">`</span><span class="dt">legendre</span><span class="st">`</span> &lt;-</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="st">  </span><span class="cf">function</span>(n, gengler){</a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">    </a>
+<a class="sourceLine" id="cb4-5" data-line-number="5">    <span class="cf">if</span> (<span class="kw">nargs</span>()<span class="op">==</span><span class="dv">1</span>){</a>
+<a class="sourceLine" id="cb4-6" data-line-number="6">      gengler &lt;-<span class="st"> </span><span class="ot">TRUE</span>   </a>
+<a class="sourceLine" id="cb4-7" data-line-number="7">    }</a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">    </a>
+<a class="sourceLine" id="cb4-9" data-line-number="9">    <span class="cf">if</span> (gengler <span class="op">!=</span><span class="st"> </span><span class="ot">TRUE</span> <span class="op">&amp;</span><span class="st"> </span>gengler <span class="op">!=</span><span class="st"> </span><span class="ot">FALSE</span>){</a>
+<a class="sourceLine" id="cb4-10" data-line-number="10">      gengler=<span class="ot">TRUE</span>  </a>
+<a class="sourceLine" id="cb4-11" data-line-number="11">    }</a>
+<a class="sourceLine" id="cb4-12" data-line-number="12">    </a>
+<a class="sourceLine" id="cb4-13" data-line-number="13">    N &lt;-<span class="st"> </span>n<span class="op">+</span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-14" data-line-number="14">    L &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>,<span class="dt">nrow=</span>N, <span class="dt">ncol=</span>N)</a>
+<a class="sourceLine" id="cb4-15" data-line-number="15">    </a>
+<a class="sourceLine" id="cb4-16" data-line-number="16">    <span class="cf">for</span>(i <span class="cf">in</span> (<span class="dv">1</span><span class="op">:</span>N)){</a>
+<a class="sourceLine" id="cb4-17" data-line-number="17">      <span class="cf">if</span>(i<span class="op">==</span><span class="dv">1</span>){</a>
+<a class="sourceLine" id="cb4-18" data-line-number="18">        L[i,i] &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-19" data-line-number="19">      }</a>
+<a class="sourceLine" id="cb4-20" data-line-number="20">      <span class="cf">else</span> <span class="cf">if</span>(i<span class="op">==</span><span class="dv">2</span>){</a>
+<a class="sourceLine" id="cb4-21" data-line-number="21">        L[i,i] &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-22" data-line-number="22">      }</a>
+<a class="sourceLine" id="cb4-23" data-line-number="23">      <span class="cf">else</span>  {</a>
+<a class="sourceLine" id="cb4-24" data-line-number="24">        tmp &lt;-<span class="st"> </span>L[i<span class="dv">-1</span>,]</a>
+<a class="sourceLine" id="cb4-25" data-line-number="25">        tmp2 &lt;-<span class="st"> </span><span class="kw">as.numeric</span>()</a>
+<a class="sourceLine" id="cb4-26" data-line-number="26">        tmp2 &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">0</span>,tmp[<span class="dv">1</span><span class="op">:</span>(N<span class="dv">-1</span>)])</a>
+<a class="sourceLine" id="cb4-27" data-line-number="27">        L[i,] &lt;-<span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>(i<span class="dv">-2</span><span class="op">+</span><span class="dv">1</span>))<span class="op">*</span>( (<span class="dv">2</span><span class="op">*</span>(i<span class="dv">-2</span>) <span class="op">+</span><span class="st"> </span><span class="dv">1</span>)<span class="op">*</span>tmp2 <span class="op">-</span>(i<span class="dv">-2</span>)<span class="op">*</span>L[i<span class="dv">-2</span>,] )</a>
+<a class="sourceLine" id="cb4-28" data-line-number="28">      }</a>
+<a class="sourceLine" id="cb4-29" data-line-number="29">    }</a>
+<a class="sourceLine" id="cb4-30" data-line-number="30">    </a>
+<a class="sourceLine" id="cb4-31" data-line-number="31">    <span class="co"># Normalize</span></a>
+<a class="sourceLine" id="cb4-32" data-line-number="32">    <span class="cf">for</span> (j <span class="cf">in</span> (<span class="dv">1</span><span class="op">:</span>N)){   </a>
+<a class="sourceLine" id="cb4-33" data-line-number="33">      L[j,] &lt;-<span class="st"> </span>(<span class="kw">sqrt</span>( (<span class="dv">2</span><span class="op">*</span>(j<span class="dv">-1</span>)<span class="op">+</span><span class="dv">1</span>)<span class="op">/</span><span class="dv">2</span>)  )<span class="op">*</span>L[j,]</a>
+<a class="sourceLine" id="cb4-34" data-line-number="34">    }</a>
+<a class="sourceLine" id="cb4-35" data-line-number="35">    </a>
+<a class="sourceLine" id="cb4-36" data-line-number="36">    </a>
+<a class="sourceLine" id="cb4-37" data-line-number="37">    <span class="co"># Gengler (1999)</span></a>
+<a class="sourceLine" id="cb4-38" data-line-number="38">    <span class="cf">if</span> (gengler<span class="op">==</span><span class="ot">TRUE</span>){</a>
+<a class="sourceLine" id="cb4-39" data-line-number="39">      L &lt;-<span class="st"> </span><span class="kw">sqrt</span>(<span class="dv">2</span>)<span class="op">*</span>L</a>
+<a class="sourceLine" id="cb4-40" data-line-number="40">    }</a>
+<a class="sourceLine" id="cb4-41" data-line-number="41">    </a>
+<a class="sourceLine" id="cb4-42" data-line-number="42">    <span class="kw">return</span>(L)</a>
+<a class="sourceLine" id="cb4-43" data-line-number="43">    </a>
+<a class="sourceLine" id="cb4-44" data-line-number="44">  }</a>
+<a class="sourceLine" id="cb4-45" data-line-number="45"></a>
+<a class="sourceLine" id="cb4-46" data-line-number="46"><span class="co">##Given time points covariate and order of fit for Legendre polynomials, return matrix 'M' containing the polynomials of standardized time. 'M' is order t (number of time points) by k (order of Legendre polynomials)</span></a>
+<a class="sourceLine" id="cb4-47" data-line-number="47">stdtime &lt;-<span class="st"> </span><span class="cf">function</span>(t, n, tmax, tmin){</a>
+<a class="sourceLine" id="cb4-48" data-line-number="48">  <span class="cf">if</span>(<span class="kw">missing</span>(tmax)) {</a>
+<a class="sourceLine" id="cb4-49" data-line-number="49">    tmax &lt;-<span class="st"> </span>t[<span class="kw">which.max</span>(t)]</a>
+<a class="sourceLine" id="cb4-50" data-line-number="50">  }</a>
+<a class="sourceLine" id="cb4-51" data-line-number="51">  <span class="cf">if</span>(<span class="kw">missing</span>(tmin)) {</a>
+<a class="sourceLine" id="cb4-52" data-line-number="52">    tmin &lt;-<span class="st"> </span>t[<span class="kw">which.min</span>(t)]</a>
+<a class="sourceLine" id="cb4-53" data-line-number="53">  }</a>
+<a class="sourceLine" id="cb4-54" data-line-number="54">  </a>
+<a class="sourceLine" id="cb4-55" data-line-number="55">  N &lt;-<span class="st"> </span>n<span class="op">+</span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-56" data-line-number="56">  M &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">nrow=</span><span class="kw">length</span>(t), <span class="dt">ncol=</span>N)</a>
+<a class="sourceLine" id="cb4-57" data-line-number="57">  a &lt;-<span class="st"> </span><span class="dv">-1</span> <span class="op">+</span><span class="st"> </span><span class="dv">2</span><span class="op">*</span>(t<span class="op">-</span>tmin)<span class="op">/</span>(tmax <span class="op">-</span><span class="st"> </span>tmin)</a>
+<a class="sourceLine" id="cb4-58" data-line-number="58">  M[,<span class="dv">1</span>] &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-59" data-line-number="59">  </a>
+<a class="sourceLine" id="cb4-60" data-line-number="60">  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>N){</a>
+<a class="sourceLine" id="cb4-61" data-line-number="61">    M[,i] &lt;-<span class="st"> </span>a<span class="op">^</span>(i<span class="dv">-1</span>)</a>
+<a class="sourceLine" id="cb4-62" data-line-number="62">  }</a>
+<a class="sourceLine" id="cb4-63" data-line-number="63">  </a>
+<a class="sourceLine" id="cb4-64" data-line-number="64">  <span class="kw">return</span>(M)</a>
+<a class="sourceLine" id="cb4-65" data-line-number="65">}</a></code></pre></div>
 <p>Here, we’ll take the sln files, extract the breeding values for the RR coefficients, and calcualte the gBLUPs at each time point.</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">library</span>(reshape2)</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="kw">setwd</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/&quot;</span>)</a>
-<a class="sourceLine" id="cb4-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb4-5" data-line-number="5">sln &lt;-<span class="st"> </span><span class="kw">read.delim</span>(<span class="st">&quot;RR.sln&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>, <span class="dt">header=</span>T)</a>
-<a class="sourceLine" id="cb4-6" data-line-number="6">  </a>
-<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="co">#gBLUPs for legendre polynomials</span></a>
-<a class="sourceLine" id="cb4-8" data-line-number="8">g.hat.y &lt;-<span class="st"> </span><span class="kw">t</span>(<span class="kw">cbind</span>(sln[<span class="kw">grep</span>(<span class="st">&quot;1.NSFTV&quot;</span>, sln<span class="op">$</span>Level) ,][,<span class="dv">3</span>],</a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">                     sln[<span class="kw">grep</span>(<span class="st">&quot;2.NSFTV&quot;</span>, sln<span class="op">$</span>Level) ,][,<span class="dv">3</span>],</a>
-<a class="sourceLine" id="cb4-10" data-line-number="10">                     sln[<span class="kw">grep</span>(<span class="st">&quot;3.NSFTV&quot;</span>, sln<span class="op">$</span>Level) ,][,<span class="dv">3</span>]))</a>
-<a class="sourceLine" id="cb4-11" data-line-number="11">  </a>
-<a class="sourceLine" id="cb4-12" data-line-number="12"><span class="kw">colnames</span>(g.hat.y) &lt;-<span class="st"> </span><span class="kw">sub</span>(<span class="st">&quot;1.&quot;</span>, <span class="st">&quot;&quot;</span>, sln[<span class="kw">grep</span>(<span class="st">&quot;1.NSFTV&quot;</span>, sln<span class="op">$</span>Level) ,][,<span class="dv">2</span>])</a>
-<a class="sourceLine" id="cb4-13" data-line-number="13">  </a>
-<a class="sourceLine" id="cb4-14" data-line-number="14"><span class="co">#Calculated gBLUPs at each time point</span></a>
-<a class="sourceLine" id="cb4-15" data-line-number="15">Phi &lt;-<span class="st"> </span><span class="kw">stdtime</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="dv">2</span>) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(<span class="kw">legendre</span>(<span class="dv">2</span>, <span class="dt">gengler =</span> F))</a>
-<a class="sourceLine" id="cb4-16" data-line-number="16">ghat.t.y &lt;-<span class="st"> </span><span class="kw">t</span>(<span class="kw">apply</span>(g.hat.y, <span class="dv">2</span>, <span class="cf">function</span> (x) Phi <span class="op">%*%</span><span class="st"> </span>x))</a>
-<a class="sourceLine" id="cb4-17" data-line-number="17"><span class="kw">colnames</span>(ghat.t.y) &lt;-<span class="st"> </span><span class="dv">1</span><span class="op">:</span><span class="dv">20</span></a>
-<a class="sourceLine" id="cb4-18" data-line-number="18">gBLUP &lt;-<span class="st"> </span><span class="kw">melt</span>(ghat.t.y)</a>
-<a class="sourceLine" id="cb4-19" data-line-number="19"><span class="kw">colnames</span>(gBLUP) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;NSFTV.ID&quot;</span>, <span class="st">&quot;DayOfImaging&quot;</span>, <span class="st">&quot;gBLUP&quot;</span>)</a>
-<a class="sourceLine" id="cb4-20" data-line-number="20"></a>
-<a class="sourceLine" id="cb4-21" data-line-number="21"><span class="kw">write.csv</span>(gBLUP, <span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/RR_GEBVs.csv&quot;</span>, <span class="dt">row.names =</span> F)</a></code></pre></div>
-</section>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="kw">library</span>(reshape2)</a>
+<a class="sourceLine" id="cb5-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"><span class="kw">setwd</span>(<span class="st">&quot;DataandCode/RR_GP/&quot;</span>)</a>
+<a class="sourceLine" id="cb5-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5">sln &lt;-<span class="st"> </span><span class="kw">read.delim</span>(<span class="st">&quot;RR.sln&quot;</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>, <span class="dt">header=</span>T)</a>
+<a class="sourceLine" id="cb5-6" data-line-number="6">  </a>
+<a class="sourceLine" id="cb5-7" data-line-number="7"><span class="co">#gBLUPs for legendre polynomials</span></a>
+<a class="sourceLine" id="cb5-8" data-line-number="8">g.hat.y &lt;-<span class="st"> </span><span class="kw">t</span>(<span class="kw">cbind</span>(sln[<span class="kw">grep</span>(<span class="st">&quot;1.NSFTV&quot;</span>, sln<span class="op">$</span>Level) ,][,<span class="dv">3</span>],</a>
+<a class="sourceLine" id="cb5-9" data-line-number="9">                     sln[<span class="kw">grep</span>(<span class="st">&quot;2.NSFTV&quot;</span>, sln<span class="op">$</span>Level) ,][,<span class="dv">3</span>],</a>
+<a class="sourceLine" id="cb5-10" data-line-number="10">                     sln[<span class="kw">grep</span>(<span class="st">&quot;3.NSFTV&quot;</span>, sln<span class="op">$</span>Level) ,][,<span class="dv">3</span>]))</a>
+<a class="sourceLine" id="cb5-11" data-line-number="11">  </a>
+<a class="sourceLine" id="cb5-12" data-line-number="12"><span class="kw">colnames</span>(g.hat.y) &lt;-<span class="st"> </span><span class="kw">sub</span>(<span class="st">&quot;1.&quot;</span>, <span class="st">&quot;&quot;</span>, sln[<span class="kw">grep</span>(<span class="st">&quot;1.NSFTV&quot;</span>, sln<span class="op">$</span>Level) ,][,<span class="dv">2</span>])</a>
+<a class="sourceLine" id="cb5-13" data-line-number="13">  </a>
+<a class="sourceLine" id="cb5-14" data-line-number="14"><span class="co">#Calculated gBLUPs at each time point</span></a>
+<a class="sourceLine" id="cb5-15" data-line-number="15">Phi &lt;-<span class="st"> </span><span class="kw">stdtime</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="dv">2</span>) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(<span class="kw">legendre</span>(<span class="dv">2</span>, <span class="dt">gengler =</span> F))</a>
+<a class="sourceLine" id="cb5-16" data-line-number="16">ghat.t.y &lt;-<span class="st"> </span><span class="kw">t</span>(<span class="kw">apply</span>(g.hat.y, <span class="dv">2</span>, <span class="cf">function</span> (x) Phi <span class="op">%*%</span><span class="st"> </span>x))</a>
+<a class="sourceLine" id="cb5-17" data-line-number="17"><span class="kw">colnames</span>(ghat.t.y) &lt;-<span class="st"> </span><span class="dv">1</span><span class="op">:</span><span class="dv">20</span></a>
+<a class="sourceLine" id="cb5-18" data-line-number="18">gBLUP &lt;-<span class="st"> </span><span class="kw">melt</span>(ghat.t.y)</a>
+<a class="sourceLine" id="cb5-19" data-line-number="19"><span class="kw">colnames</span>(gBLUP) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;NSFTV.ID&quot;</span>, <span class="st">&quot;DayOfImaging&quot;</span>, <span class="st">&quot;gBLUP&quot;</span>)</a>
+<a class="sourceLine" id="cb5-20" data-line-number="20"></a>
+<a class="sourceLine" id="cb5-21" data-line-number="21"><span class="kw">write.csv</span>(gBLUP, <span class="st">&quot;RR_GEBVs.csv&quot;</span>, <span class="dt">row.names =</span> F)</a></code></pre></div>
+</div>
 </div>
 
 
     </div>
     <div class="col-md-2">
-      <div id="toc">
+            <div id="toc">
       	<button type="button" class="close">×</button>
         <ul>
         <li><a href="#background">Background</a></li>
@@ -1026,7 +974,7 @@ residual id(2142).idh(DayOfImaging $USe)</code></pre>
         <li><a href="#solving-for-gebvs-at-each-time-point">Solving for GEBVs at each time point</a></li>
         </ul>
       </div>
-    </div>
+          </div>
   </div>
 </div>
 
@@ -1048,6 +996,7 @@ $(document).ready(function () {
   $('#content').magnificPopup({
 	      type:'image',
 	      closeOnContentClick: false,
+	      closeBtnInside: false,
 	      delegate: 'img',
 	      gallery: {enabled: true },
 	      image: {

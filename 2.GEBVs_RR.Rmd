@@ -51,7 +51,7 @@ residual id(1071).idh(DOI $USe)
 ```
 
 Here is how it was run.
-```{bash run asreml}
+```{bash run asreml, execute = F, echo = T}
 cd RR_GP/
 
 asreml RR.as
@@ -61,7 +61,7 @@ asreml RR.as
 GEBVs at each time point were be obtained following to [Mrode (2014)](https://books.google.com/books?hl=en&lr=&id=b6MKAwAAQBAJ&oi=fnd&pg=PR5&dq=mrode+linear+models&ots=8Q3ejuZBpU&sig=PVGj2Zi13XD9f_ATZt3Pt4X7r1U). For line $j$ at time $t$, the GEBVs can be obtained by $\text{gBLUP}_{jt} = \phi_t\hat{u}_j$; where $\phi_t$ is the row vector of the matrix of Legendre polynomials of order 2. 
 
 The functions below were adapted from Mrode (2005) by [Gota Morota](http://morotalab.org/Mrode2005/rr/rr.html#section00020000000000000000)
-```{r load functions for RR with leg polynomials, echo=FALSE}
+```{r load functions for RR with leg polynomials, echo=T, eval=FALSE}
 ##Return coefficient matrix (lambda) of n-th order Legendre polynomials. Scaling method implemented by Gengler et. al. (1999) converts constant Legendre polynomial coefficients into 1
 `legendre` <-
   function(n, gengler){
@@ -130,7 +130,7 @@ stdtime <- function(t, n, tmax, tmin){
 ```
 
 Here, we'll take the sln files, extract the breeding values for the RR coefficients, and calcualte the gBLUPs at each time point.
-```{r solve for BVs at each time point}
+```{r solve for BVs at each time point, echo = T, eval = F}
 library(reshape2)
 
 setwd("DataandCode/RR_GP/")

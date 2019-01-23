@@ -32,9 +32,9 @@ BLUP of marker effects can be obtained using the following linear transformation
 
 $$BLUP(\boldsymbol{\beta}) = \mathbf{W_{sc}'}(\mathbf{W_{sc}W_{sc}'})^{-1}BLUP(\mathbf{g})$$
 
-#Estimating marker effects for RR-derived GEBVs
+# Estimating marker effects for RR-derived GEBVs
 Given the relationship between BLUP of breeding values and marker effects, this script will calcualte the marker effects from GEBVs.
-```{r load RR files}
+```{r load RR files, echo = T, eval = F}
 library(reshape2)
 GEBVs <- read.csv("DataAndCode/RR_GP/RR_GEBVs.csv")
 
@@ -51,7 +51,7 @@ sum(GEBVs$NSFTV.ID == colnames(G))
 GEBVs$NSFTV.ID <- NULL
 ```
 
-```{r solve for marker effects from RR GEBVs}
+```{r solve for marker effects from RR GEBVs, echo = T, eval = F}
 library(MASS)
 Eff.mat <- matrix(0, nrow = ncol(Zsc), ncol = 20)
 
@@ -63,8 +63,8 @@ write.csv(Eff.mat, "DataAndCode/CompCluster/RR/Eff.mat.csv", row.names = F)
 ```
 
 
-#Estimating marker effects for TP-derived GEBVs
-```{r solve for marker effects from TP GEBVs}
+# Estimating marker effects for TP-derived GEBVs
+```{r solve for marker effects from TP GEBVs, echo = T, eval = F}
 FILES <- paste0("DataAndCode/TP_GP/TPY", 1:20, ".sln")
 
 Eff.mat.TP <- matrix(0, nrow = ncol(Zsc), ncol = 20)

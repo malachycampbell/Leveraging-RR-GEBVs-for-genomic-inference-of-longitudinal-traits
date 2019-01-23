@@ -564,11 +564,6 @@ text-align: center;
 font-style: italic;
 font-size: 90%;
 }
-img.mfp-img {
-background-color: #FFFFFF;
-padding: 0px;
-margin: 40px auto;
-}
 .mfp-figure {
 min-width: 250px;
 }
@@ -830,319 +825,443 @@ img {
 </div>
 
 <div id="content">
-<section id="background" class="level1">
-<h1>Background</h1>
-<p>Here, we’ll calculate the variance componnets for both the RR and TP approaches, and calculate the p-values for the marker effects. Due to the size of the dataset, the matrix mutliplication can be too computationally demanding for a desktop PC. As a results, all these analyses were run on a computing cluster with 64 Gb of RAM. The code used to run the analyses, as well as the slurm file for submission is provided, but to repeat the analyses users should find a suitable machine.</p>
-</section>
-<section id="estimating-variance-components-for-the-tp-approach." class="level1">
-<h1>Estimating variance components for the TP approach.</h1>
-<p>Recall, that the TP approach produces 20 individual files. The code chunks below parses those files, extracts the variance components, and stores them for later use.</p>
-<p>Parses the asr files.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="bu">cd</span> /Users/malachycampbell/Desktop/RRgwas_git/TP_GP/</a>
-<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="kw">for</span> <span class="fu">file</span> in *.asr<span class="kw">;</span> <span class="kw">do</span> <span class="fu">less</span> <span class="va">$file</span> <span class="kw">|</span> <span class="fu">grep</span> -A6 <span class="st">&quot;Model_Term&quot;</span> <span class="kw">|</span> <span class="fu">sed</span> -n <span class="st">&quot;1,4p&quot;</span> <span class="kw">|</span> <span class="fu">tr</span> -s <span class="st">&quot; &quot;</span> <span class="op">&gt;</span> <span class="va">$file</span>.varcomp.txt<span class="kw">;</span> <span class="kw">done</span></a></code></pre></div>
-<p>Read in the parsed asr file and extract the variance components.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="kw">library</span>(reshape2)</a>
-<a class="sourceLine" id="cb2-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb2-3" data-line-number="3"><span class="kw">setwd</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/TP_GP/&quot;</span>)</a>
-<a class="sourceLine" id="cb2-4" data-line-number="4"></a>
-<a class="sourceLine" id="cb2-5" data-line-number="5">FILES &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;TPY&quot;</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="st">&quot;.asr.varcomp.txt&quot;</span>)</a>
-<a class="sourceLine" id="cb2-6" data-line-number="6"><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
-<a class="sourceLine" id="cb2-7" data-line-number="7">  tmp &lt;-<span class="st"> </span><span class="kw">read.table</span>(FILES[i], <span class="dt">skip =</span> <span class="dv">1</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>)</a>
-<a class="sourceLine" id="cb2-8" data-line-number="8">  tmp<span class="op">$</span>DOI &lt;-<span class="st"> </span>i</a>
-<a class="sourceLine" id="cb2-9" data-line-number="9">  <span class="cf">if</span>(i <span class="op">==</span><span class="st"> </span><span class="dv">1</span>){</a>
-<a class="sourceLine" id="cb2-10" data-line-number="10">    final &lt;-<span class="st"> </span>tmp</a>
-<a class="sourceLine" id="cb2-11" data-line-number="11">  }<span class="cf">else</span>{</a>
-<a class="sourceLine" id="cb2-12" data-line-number="12">    final &lt;-<span class="st"> </span><span class="kw">rbind</span>(final, tmp)</a>
-<a class="sourceLine" id="cb2-13" data-line-number="13">  }</a>
-<a class="sourceLine" id="cb2-14" data-line-number="14">}</a>
-<a class="sourceLine" id="cb2-15" data-line-number="15">final &lt;-<span class="st"> </span>final[<span class="kw">c</span>(<span class="st">&quot;V1&quot;</span>, <span class="st">&quot;V5&quot;</span>, <span class="st">&quot;DOI&quot;</span>)]</a>
-<a class="sourceLine" id="cb2-16" data-line-number="16"><span class="kw">colnames</span>(final)[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Source&quot;</span>, <span class="st">&quot;Sigma&quot;</span>)</a>
-<a class="sourceLine" id="cb2-17" data-line-number="17"></a>
-<a class="sourceLine" id="cb2-18" data-line-number="18">Var.TP &lt;-<span class="st"> </span><span class="kw">dcast</span>(final, Source <span class="op">~</span><span class="st"> </span>DOI, <span class="dt">value.var =</span> <span class="st">&quot;Sigma&quot;</span>)</a>
-<a class="sourceLine" id="cb2-19" data-line-number="19">Var.TP &lt;-<span class="st"> </span>Var.TP[<span class="dv">2</span><span class="op">:</span><span class="dv">21</span>]</a>
-<a class="sourceLine" id="cb2-20" data-line-number="20"><span class="kw">row.names</span>(Var.TP) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Exp&quot;</span>, <span class="st">&quot;G&quot;</span>, <span class="st">&quot;E&quot;</span>)</a>
-<a class="sourceLine" id="cb2-21" data-line-number="21"><span class="kw">print</span>(Var.TP)</a></code></pre></div>
-<pre><code>##               1           2           3           4          5          6
-## Exp 3.75206e-05 7.84931e-05 0.000322638 0.000596538 0.00159046 0.00303258
-## G   1.28181e-03 1.97530e-03 0.002975320 0.004486910 0.00688751 0.01172670
-## E   9.39195e-04 1.49794e-03 0.002367440 0.003663900 0.00572526 0.00870325
-##              7         8         9        10        11        12        13
-## Exp 0.00487805 0.0102790 0.0187492 0.0270581 0.0393621 0.0653885 0.0984344
-## G   0.01825650 0.0282029 0.0404262 0.0618629 0.0889925 0.1257450 0.1763340
-## E   0.01314320 0.0190307 0.0256668 0.0361000 0.0518553 0.0716698 0.0987503
-##           14       15       16       17       18       19       20
-## Exp 0.142307 0.219408 0.271812 0.386596 0.522327 0.737887 1.036990
-## G   0.245712 0.345736 0.480160 0.668661 0.948773 1.223140 1.630110
-## E   0.136903 0.183830 0.239522 0.320269 0.425644 0.557600 0.713231</code></pre>
-</section>
-<section id="estimating-variance-components-for-the-rr-approach." class="level1">
-<h1>Estimating variance components for the RR approach.</h1>
-<p>To get the p-values, we need to know <span class="math inline">\(\sigma^2_g\)</span> and <span class="math inline">\(\sigma^2_e\)</span> at each time point. The RR approach only produces a single .asr file. Using the methods described by <a href="https://books.google.com/books?hl=en&amp;lr=&amp;id=b6MKAwAAQBAJ&amp;oi=fnd&amp;pg=PR5&amp;dq=mrode+linear+models&amp;ots=8Q3ejuZBpU&amp;sig=PVGj2Zi13XD9f_ATZt3Pt4X7r1U">Mrode 2014</a>, and our <a href="https://www.biorxiv.org/content/early/2018/07/12/319897">Plant Direct paper</a> we can solve for the variance components as follows. Briefly, for time <span class="math inline">\(i\)</span> the genetic variance can be obtained by <span class="math inline">\(\mathbf{t}_{i} \mathbf{\Omega} \mathbf{t}_{i}'\)</span>, where <span class="math inline">\(\mathbf{t}_{i} = \phi_{ik}\)</span>, the <span class="math inline">\(i\)</span>th row vector of the matrix of Legendre polynomials at different time points (<span class="math inline">\(\mathbf{\phi}\)</span>) for the <span class="math inline">\(i\)</span>th day of imaging, <span class="math inline">\(\mathbf{\Omega}\)</span> is the covariance matrix of RR coefficients for the genetic effects, and <span class="math inline">\(k\)</span> is the order of fit. The variance of the experimental effect across time points was calculated using the same approach.</p>
+<div id="random-regression" class="section level1">
+<h1>Random Regression</h1>
+<div id="defining-the-mixed-model-equation" class="section level2">
+<h2>Defining the mixed model equation</h2>
+<p>The following random regression model was used to model trajectories for PSA across the 20 time points and obtain estimates for <span class="math inline">\(\mathbf{\Omega}\)</span> and <span class="math inline">\(\mathbf{P}\)</span></p>
+<p><span class="math display">\[\begin{align}
+  \label{RR1}
+\text{PSA}_{tijk} =\mu + \sum_{k=0}^{2}\phi_{jtk}\beta_k + \sum_{k=0}^{2}\phi_{jtk} u_{jk} + \sum_{k=0}^{1}\phi_{itk} s_{ik} + e_{tijk}
+\end{align}\]</span></p>
+<p>In matrix notation, the model can be written as <span class="math display">\[\begin{align}
+  \label{RR3}
+  \mathbf{y} &amp;= \mathbf{Xb} + \mathbf{Zu} + \mathbf{Qs} +  \mathbf{e} 
+\end{align}\]</span></p>
+<p><span class="math inline">\(\mathbf{y}\)</span> is a vector with an order equal to the number of observations and contains the <span class="math inline">\(PSA\)</span> over the 20 days. <span class="math inline">\(\mathbf{X}\)</span> is a covariable matrix for the fixed effects where the number of rows is equal to the number of observations (<span class="math inline">\(n\)</span>) and the number of columns is equal to the order of Legendre polynomial used to model fixed effects (<span class="math inline">\(k_f\)</span>). The matrices <span class="math inline">\(\mathbf{Z}\)</span> and <span class="math inline">\(\mathbf{Q}\)</span> are covariable matrices for the random additive genetic and random experimental effects, respectively. The number of rows for <span class="math inline">\(\mathbf{Z}\)</span> is equal to the number of observations and the number of columns corresponds to the order of Legendre polynomial times the number of lines used to fit the additive genetic effect (<span class="math inline">\(q * k_g = 357 * 3 = 1,071\)</span>). For <span class="math inline">\(\mathbf{Q}\)</span> the number of columns would be 6 (<span class="math inline">\(e * k_s = 3 * 2\)</span>) and the number of rows would be equal to the number of observations. We assume <span class="math inline">\(\mathbf{u} \sim N(0, \mathbf{G} \otimes \mathbf{\Omega})\)</span>, <span class="math inline">\(\mathbf{s} \sim N(0, \mathbf{I} \otimes \mathbf{P})\)</span>, and <span class="math inline">\(\mathbf{e} \sim N(0, \mathbf{I} \otimes \mathbf{D})\)</span>. Here, <span class="math inline">\(\mathbf{\Omega}\)</span> and <span class="math inline">\(\mathbf{P}\)</span> are the covariance matrices for the RR coefficients for the additive genetic and permanent environmental effects. <span class="math inline">\(\mathbf{D}\)</span> is a diagonal matrix that allows for heterogeneous variances over the 20 time points.</p>
+<p>The mixed model equation (MME) is</p>
+<p><span class="math display">\[\begin{align}
+\begin{bmatrix}
+\mathbf{X' R^{-1} X} &amp; \mathbf{X' R^{-1} Z} &amp; \mathbf{X' R^{-1} Q}\\
+\mathbf{Z' R^{-1} X} &amp; \mathbf{Z' R^{-1} Z} + \mathbf{G^{-1}} \otimes \boldsymbol{\Omega} &amp; \mathbf{Z' R^{-1} Q}\\
+\mathbf{Q' R^{-1} X} &amp; \mathbf{Q' R^{-1} Z} &amp; \mathbf{Q' R^{-1} Q} + \mathbf{I} \otimes \mathbf{P}\\
+\end{bmatrix}
+\begin{bmatrix}
+\mathbf{\hat{b}} \\
+\mathbf{\hat{u}}  \\
+\mathbf{\hat{s}} \\
+\end{bmatrix}
+&amp;=
+\begin{bmatrix}
+\mathbf{X' R^{-1} y} \\
+\mathbf{Z' R^{-1} y} \\
+\mathbf{Q' R^{-1} y} \\
+\end{bmatrix}
+\end{align}\]</span></p>
+<p>Solving the above MME will give three RR coefficients for each line for the random genetic effects. Using these RR coefficients, the genetic values at each time point can be obtained. For line <span class="math inline">\(j\)</span> the predicted genetic values (gBLUP) at each time point is given by <span class="math inline">\(gBLUP_j = \boldsymbol{\Phi} \hat{u}_j\)</span>.</p>
+</div>
+<div id="setting-up-covariable-matrices-for-the-rr-approach" class="section level2">
+<h2>Setting up covariable matrices for the RR approach</h2>
+<p>For each term, we define a matrix of Legendre polynomials evaluated at each time point. Recall that both the fixed and random additive genetic effect are modeled using a second-order Legendre polynomial. The covariable matrix <span class="math inline">\(\mathbf{X}\)</span> is defined as <span class="math inline">\(\mathbf{X = X^{o} \Phi_f}\)</span> where <span class="math inline">\(\mathbf{X^{o}}\)</span> is a vector of 1 with length <span class="math inline">\(q*e\)</span>. Similarly, we define matrices <span class="math inline">\(\mathbf{Z}\)</span> and <span class="math inline">\(\mathbf{Q}\)</span> as <span class="math display">\[\begin{align}
+\mathbf{Z} &amp;= \mathbf{Z^o} \otimes \boldsymbol{\Phi_g} \\
+\mathbf{Q} &amp;= \mathbf{Q^o} \otimes \boldsymbol{\Phi_s} 
+\end{align}\]</span> <span class="math inline">\(\mathbf{Z^o}\)</span> and <span class="math inline">\(\mathbf{Q^o}\)</span> are incidence matrices that allocate temporal records to individuals and experiments respectively. The order of <span class="math inline">\(\mathbf{Z^o}\)</span> is <span class="math inline">\(q*e \times q\)</span> and <span class="math inline">\(\mathbf{Q^o}\)</span> is <span class="math inline">\(q*e \times e\)</span> (<span class="math inline">\(q\)</span> is the number of individuals, <span class="math inline">\(e\)</span> is the number of experiments).</p>
 <p>The functions below were adapted from Mrode (2005) by <a href="http://morotalab.org/Mrode2005/rr/rr.html#section00020000000000000000">Gota Morota</a></p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">Resvar &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="fl">1.39E-03</span>, <span class="fl">1.22E-03</span>, <span class="fl">2.06E-03</span>, <span class="fl">3.33E-03</span>, <span class="fl">5.32E-03</span>,</a>
-<a class="sourceLine" id="cb4-2" data-line-number="2">            <span class="fl">7.88E-03</span>, <span class="fl">1.18E-02</span>, <span class="fl">1.53E-02</span>, <span class="fl">2.04E-02</span>, <span class="fl">2.75E-02</span>,</a>
-<a class="sourceLine" id="cb4-3" data-line-number="3">            <span class="fl">4.02E-02</span>, <span class="fl">5.80E-02</span>, <span class="fl">8.19E-02</span>, <span class="fl">0.114587</span>, <span class="fl">0.164339</span>, </a>
-<a class="sourceLine" id="cb4-4" data-line-number="4">            <span class="fl">0.22392</span>, <span class="fl">0.336068</span>, <span class="fl">0.521511</span>, <span class="fl">0.78897</span>, <span class="fl">1.17139</span>)</a>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="co">##Return coefficient matrix (lambda) of n-th order Legendre polynomials. Scaling method implemented by Gengler et. al. (1999) converts constant Legendre polynomial coefficients into 1</span></a>
+<a class="sourceLine" id="cb1-2" data-line-number="2"><span class="st">`</span><span class="dt">legendre</span><span class="st">`</span> &lt;-</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3"><span class="st">  </span><span class="cf">function</span>(n, gengler){</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4">    </a>
+<a class="sourceLine" id="cb1-5" data-line-number="5">    <span class="cf">if</span> (<span class="kw">nargs</span>()<span class="op">==</span><span class="dv">1</span>){</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6">      gengler &lt;-<span class="st"> </span><span class="ot">TRUE</span>   </a>
+<a class="sourceLine" id="cb1-7" data-line-number="7">    }</a>
+<a class="sourceLine" id="cb1-8" data-line-number="8">    </a>
+<a class="sourceLine" id="cb1-9" data-line-number="9">    <span class="cf">if</span> (gengler <span class="op">!=</span><span class="st"> </span><span class="ot">TRUE</span> <span class="op">&amp;</span><span class="st"> </span>gengler <span class="op">!=</span><span class="st"> </span><span class="ot">FALSE</span>){</a>
+<a class="sourceLine" id="cb1-10" data-line-number="10">      gengler=<span class="ot">TRUE</span>  </a>
+<a class="sourceLine" id="cb1-11" data-line-number="11">    }</a>
+<a class="sourceLine" id="cb1-12" data-line-number="12">    </a>
+<a class="sourceLine" id="cb1-13" data-line-number="13">    N &lt;-<span class="st"> </span>n<span class="op">+</span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb1-14" data-line-number="14">    L &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>,<span class="dt">nrow=</span>N, <span class="dt">ncol=</span>N)</a>
+<a class="sourceLine" id="cb1-15" data-line-number="15">    </a>
+<a class="sourceLine" id="cb1-16" data-line-number="16">    <span class="cf">for</span>(i <span class="cf">in</span> (<span class="dv">1</span><span class="op">:</span>N)){</a>
+<a class="sourceLine" id="cb1-17" data-line-number="17">      <span class="cf">if</span>(i<span class="op">==</span><span class="dv">1</span>){</a>
+<a class="sourceLine" id="cb1-18" data-line-number="18">        L[i,i] &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb1-19" data-line-number="19">      }</a>
+<a class="sourceLine" id="cb1-20" data-line-number="20">      <span class="cf">else</span> <span class="cf">if</span>(i<span class="op">==</span><span class="dv">2</span>){</a>
+<a class="sourceLine" id="cb1-21" data-line-number="21">        L[i,i] &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb1-22" data-line-number="22">      }</a>
+<a class="sourceLine" id="cb1-23" data-line-number="23">      <span class="cf">else</span>  {</a>
+<a class="sourceLine" id="cb1-24" data-line-number="24">        tmp &lt;-<span class="st"> </span>L[i<span class="dv">-1</span>,]</a>
+<a class="sourceLine" id="cb1-25" data-line-number="25">        tmp2 &lt;-<span class="st"> </span><span class="kw">as.numeric</span>()</a>
+<a class="sourceLine" id="cb1-26" data-line-number="26">        tmp2 &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">0</span>,tmp[<span class="dv">1</span><span class="op">:</span>(N<span class="dv">-1</span>)])</a>
+<a class="sourceLine" id="cb1-27" data-line-number="27">        L[i,] &lt;-<span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>(i<span class="dv">-2</span><span class="op">+</span><span class="dv">1</span>))<span class="op">*</span>( (<span class="dv">2</span><span class="op">*</span>(i<span class="dv">-2</span>) <span class="op">+</span><span class="st"> </span><span class="dv">1</span>)<span class="op">*</span>tmp2 <span class="op">-</span>(i<span class="dv">-2</span>)<span class="op">*</span>L[i<span class="dv">-2</span>,] )</a>
+<a class="sourceLine" id="cb1-28" data-line-number="28">      }</a>
+<a class="sourceLine" id="cb1-29" data-line-number="29">    }</a>
+<a class="sourceLine" id="cb1-30" data-line-number="30">    </a>
+<a class="sourceLine" id="cb1-31" data-line-number="31">    <span class="co"># Normalize</span></a>
+<a class="sourceLine" id="cb1-32" data-line-number="32">    <span class="cf">for</span> (j <span class="cf">in</span> (<span class="dv">1</span><span class="op">:</span>N)){   </a>
+<a class="sourceLine" id="cb1-33" data-line-number="33">      L[j,] &lt;-<span class="st"> </span>(<span class="kw">sqrt</span>( (<span class="dv">2</span><span class="op">*</span>(j<span class="dv">-1</span>)<span class="op">+</span><span class="dv">1</span>)<span class="op">/</span><span class="dv">2</span>)  )<span class="op">*</span>L[j,]</a>
+<a class="sourceLine" id="cb1-34" data-line-number="34">    }</a>
+<a class="sourceLine" id="cb1-35" data-line-number="35">    </a>
+<a class="sourceLine" id="cb1-36" data-line-number="36">    </a>
+<a class="sourceLine" id="cb1-37" data-line-number="37">    <span class="co"># Gengler (1999)</span></a>
+<a class="sourceLine" id="cb1-38" data-line-number="38">    <span class="cf">if</span> (gengler<span class="op">==</span><span class="ot">TRUE</span>){</a>
+<a class="sourceLine" id="cb1-39" data-line-number="39">      L &lt;-<span class="st"> </span><span class="kw">sqrt</span>(<span class="dv">2</span>)<span class="op">*</span>L</a>
+<a class="sourceLine" id="cb1-40" data-line-number="40">    }</a>
+<a class="sourceLine" id="cb1-41" data-line-number="41">    </a>
+<a class="sourceLine" id="cb1-42" data-line-number="42">    <span class="kw">return</span>(L)</a>
+<a class="sourceLine" id="cb1-43" data-line-number="43">    </a>
+<a class="sourceLine" id="cb1-44" data-line-number="44">  }</a>
+<a class="sourceLine" id="cb1-45" data-line-number="45"></a>
+<a class="sourceLine" id="cb1-46" data-line-number="46"><span class="co">##Given time points covariate and order of fit for Legendre polynomials, return matrix 'M' containing the polynomials of standardized time. 'M' is order t (number of time points) by k (order of Legendre polynomials)</span></a>
+<a class="sourceLine" id="cb1-47" data-line-number="47">stdtime &lt;-<span class="st"> </span><span class="cf">function</span>(t, n, tmax, tmin){</a>
+<a class="sourceLine" id="cb1-48" data-line-number="48">  <span class="cf">if</span>(<span class="kw">missing</span>(tmax)) {</a>
+<a class="sourceLine" id="cb1-49" data-line-number="49">    tmax &lt;-<span class="st"> </span>t[<span class="kw">which.max</span>(t)]</a>
+<a class="sourceLine" id="cb1-50" data-line-number="50">  }</a>
+<a class="sourceLine" id="cb1-51" data-line-number="51">  <span class="cf">if</span>(<span class="kw">missing</span>(tmin)) {</a>
+<a class="sourceLine" id="cb1-52" data-line-number="52">    tmin &lt;-<span class="st"> </span>t[<span class="kw">which.min</span>(t)]</a>
+<a class="sourceLine" id="cb1-53" data-line-number="53">  }</a>
+<a class="sourceLine" id="cb1-54" data-line-number="54">  </a>
+<a class="sourceLine" id="cb1-55" data-line-number="55">  N &lt;-<span class="st"> </span>n<span class="op">+</span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb1-56" data-line-number="56">  M &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">nrow=</span><span class="kw">length</span>(t), <span class="dt">ncol=</span>N)</a>
+<a class="sourceLine" id="cb1-57" data-line-number="57">  a &lt;-<span class="st"> </span><span class="dv">-1</span> <span class="op">+</span><span class="st"> </span><span class="dv">2</span><span class="op">*</span>(t<span class="op">-</span>tmin)<span class="op">/</span>(tmax <span class="op">-</span><span class="st"> </span>tmin)</a>
+<a class="sourceLine" id="cb1-58" data-line-number="58">  M[,<span class="dv">1</span>] &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb1-59" data-line-number="59">  </a>
+<a class="sourceLine" id="cb1-60" data-line-number="60">  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>N){</a>
+<a class="sourceLine" id="cb1-61" data-line-number="61">    M[,i] &lt;-<span class="st"> </span>a<span class="op">^</span>(i<span class="dv">-1</span>)</a>
+<a class="sourceLine" id="cb1-62" data-line-number="62">  }</a>
+<a class="sourceLine" id="cb1-63" data-line-number="63">  </a>
+<a class="sourceLine" id="cb1-64" data-line-number="64">  <span class="kw">return</span>(M)</a>
+<a class="sourceLine" id="cb1-65" data-line-number="65">}</a></code></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1">TPs &lt;-<span class="st"> </span><span class="dv">20</span></a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">Inds &lt;-<span class="st"> </span><span class="dv">357</span></a>
+<a class="sourceLine" id="cb2-3" data-line-number="3">Ex &lt;-<span class="st"> </span><span class="dv">3</span></a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">PhiF &lt;-<span class="st"> </span><span class="kw">stdtime</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="dv">2</span>) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(<span class="kw">legendre</span>(<span class="dv">2</span>, <span class="dt">gengler =</span> F)) <span class="co">#Fixed effects</span></a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">PhiG &lt;-<span class="st"> </span><span class="kw">stdtime</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="dv">2</span>) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(<span class="kw">legendre</span>(<span class="dv">2</span>, <span class="dt">gengler =</span> F)) <span class="co">#Additive genetic effects</span></a>
+<a class="sourceLine" id="cb2-6" data-line-number="6">PhiE &lt;-<span class="st"> </span><span class="kw">stdtime</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="dv">1</span>) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(<span class="kw">legendre</span>(<span class="dv">1</span>, <span class="dt">gengler =</span> F)) <span class="co">#Experimental effect</span></a>
+<a class="sourceLine" id="cb2-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb2-8" data-line-number="8">X &lt;-<span class="st"> </span><span class="kw">do.call</span>(rbind, <span class="kw">replicate</span>(Inds<span class="op">*</span>Ex, PhiF, <span class="dt">simplify=</span><span class="ot">FALSE</span>))</a>
+<a class="sourceLine" id="cb2-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb2-10" data-line-number="10">Idnt &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> Inds, <span class="dt">nrow =</span> Inds)</a>
+<a class="sourceLine" id="cb2-11" data-line-number="11"><span class="kw">diag</span>(Idnt) &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb2-12" data-line-number="12">Z &lt;-<span class="st"> </span><span class="kw">kronecker</span>(Idnt, <span class="kw">matrix</span>(<span class="dv">1</span>, <span class="dt">nrow =</span> Ex, <span class="dt">ncol =</span> <span class="dv">1</span>)) </a>
+<a class="sourceLine" id="cb2-13" data-line-number="13">Z &lt;-<span class="st"> </span><span class="kw">kronecker</span>(Z, PhiG) <span class="co">#n x kg*q; 21420 x 357*3</span></a>
+<a class="sourceLine" id="cb2-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb2-15" data-line-number="15">Idnt &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> Ex, <span class="dt">nrow =</span> Ex)</a>
+<a class="sourceLine" id="cb2-16" data-line-number="16"><span class="kw">diag</span>(Idnt) &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb2-17" data-line-number="17">Q &lt;-<span class="st"> </span><span class="kw">kronecker</span>(Idnt, <span class="kw">matrix</span>(<span class="dv">1</span>, <span class="dt">nrow =</span> Inds, <span class="dt">ncol =</span> <span class="dv">1</span>)) <span class="co">#n x e; 1071 x 3</span></a>
+<a class="sourceLine" id="cb2-18" data-line-number="18">Q &lt;-<span class="st"> </span><span class="kw">kronecker</span>(Q, PhiE) <span class="co">#n x ke*e; 21420 x 2*3</span></a></code></pre></div>
+</div>
+<div id="calculating-textrmvarhatbeta-textrm-at-each-time-point" class="section level2">
+<h2>Calculating <span class="math inline">\(\textrm{Var(}\hat{\beta} \textrm{)}\)</span> at each time point</h2>
+<p>The objective is to calculate SNP effects at each time point. For the single time point approach <span class="math inline">\(\textrm{BLUP(}\hat{\beta} \textrm{)} = \mathbf{W_{sc}' G^{-1} \hat{g} }\)</span>. Thus, <span class="math display">\[\begin{align}
+\label{eq:9}
+\textrm{Var(}\hat{\beta} \textrm{)} &amp;= \textrm{Var(} \mathbf{W_{sc}' G^{-1} \hat{u} } \textrm{)} \\
+&amp;= \mathbf{W_{sc}' G^{-1}} \textrm{Var(} \mathbf{\hat{u}} \textrm{)} \mathbf{G^{-1} W_{sc}}
+\end{align}\]</span></p>
+<p>The prediction error variance (PEV) of <span class="math inline">\(\boldsymbol{\hat{u}}\)</span> is <span class="math display">\[\begin{align}
+\textrm{PEV(}\hat{\mathbf{u}} \textrm{)} = \mathbf{C^{22}} \sigma^2_e &amp;= \textrm{Var(} \mathbf{u - \hat{u} }\textrm{)} \\
+&amp;= \textrm{Var(} \mathbf{u} \textrm{)} - \textrm{Var(} \hat{\mathbf{u}} \textrm{)} \\
+&amp;= \mathbf{G} \sigma^2_g - \textrm{Var(} \hat{\mathbf{u}} \textrm{)}
+\end{align}\]</span></p>
+<p>By rearranging the equation above we obtain</p>
+<p><span class="math display">\[\begin{align}
+\label{eq:13}
+\textrm{Var(} \hat{\mathbf{u}} \textrm{)} &amp;= \mathbf{G} \sigma^2_g - \mathbf{C^{22}} \sigma^2_e
+\end{align}\]</span></p>
+<p>To calculate the variance of the SNP effects, we can introduce equation (13) into equation (9) giving</p>
+<p><span class="math display">\[\begin{align}
+\textrm{Var(} \hat{\boldsymbol{\beta}} \textrm{)} &amp;= \mathbf{W'_{sc} G^{-1}} (\mathbf{G} \sigma_g^2 - \mathbf{C^{22}} \sigma^2_e) \mathbf{G^{-1} W_{sc} } \\
+&amp;= \mathbf{W'_{sc} G^{-1} W_{sc}} \sigma_g^2 - \mathbf{W'_{sc} G^{-1} C^{22}} \mathbf{G^{-1} W_{sc} \sigma^2_e }
+\end{align}\]</span></p>
+<p>At each time point, <span class="math inline">\(\sigma_g^2\)</span> is extracted from the corresponding the diagonal element of <span class="math inline">\(\boldsymbol{\Phi_g \Omega \Phi'_g}\)</span>.</p>
+<p><span class="math inline">\(\mathbf{C^{22}}\)</span> is obtained by inverting the coefficient matrix of the MME (equation 3), and is of order <span class="math inline">\(q*k_g \times q*k_g\)</span>. The diagonal elements of <span class="math inline">\(\mathbf{C^{22}}\)</span> contain the PEV for the RR coefficients for the additive genetic effect. To obtain the variance of SNP effects at each time point <span class="math inline">\(\mathbf{C^{22}}\)</span> must be transformed so that the diagonal elements correspond to the PEV for GEBVs at each time point. We will refer to this <span class="math inline">\(q*t \times q*t\)</span> matrix as <span class="math inline">\(\mathbf{C^{22}}^*\)</span>. Following , PEV for individual <span class="math inline">\(i\)</span> at each time point can be obtained by taking the diagonal elements of <span class="math inline">\(\textrm{PEV}_i = \boldsymbol{\Phi_g} \mathbf{C_{ii}} \boldsymbol{\Phi_g'}\)</span>. <span class="math inline">\(\mathbf{C_{ii}}\)</span> is a <span class="math inline">\(3 \times 3\)</span> submatrix of RR coefficients from <span class="math inline">\(\mathbf{C_{22}}\)</span> for individual <span class="math inline">\(i\)</span>. To extend this approach to the full <span class="math inline">\(\mathbf{C_{22}}\)</span> matrix, we construct a block matrix of <span class="math inline">\(\boldsymbol{\Phi_{g}}\)</span> (<span class="math inline">\(\boldsymbol{\Phi^*_{g}}\)</span>) via <span class="math inline">\(\boldsymbol{\Phi^*_{g}} = \mathbf{I} \otimes \boldsymbol{\Phi_{g}}\)</span> and obtain <span class="math inline">\(\boldsymbol{C^{22*}}\)</span> by</p>
+<p><span class="math display">\[\begin{align}
+\boldsymbol{C^{22*}} &amp;= \boldsymbol{\Phi_{g}^*} \boldsymbol{C^{22}} \boldsymbol{\Phi_{g}^*}'
+\end{align}\]</span></p>
+<p>Thus, <span class="math inline">\(\mathbf{C_{22}^*}\)</span> is <span class="math inline">\(q*t \times q*t\)</span> and the diagonal elements are the PEV for GEBVs at each time point. Finally, to calculate the variance of SNP effects at each time point at each, we extract the corresponding elements of <span class="math inline">\(\boldsymbol{C^{22*}}\)</span> and introduce them into .</p>
+<div id="setting-up-mme-and-obtaining-c22" class="section level3">
+<h3>Setting up MME and obtaining C22*</h3>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">Resvar &lt;-<span class="st"> </span><span class="kw">diag</span>(<span class="dv">20</span>)</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2"><span class="kw">diag</span>(Resvar) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="fl">1.37E-03</span>, <span class="fl">1.11E-03</span>, <span class="fl">1.87E-03</span>, <span class="fl">3.00E-03</span>, <span class="fl">4.81E-03</span>,</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">                  <span class="fl">7.08E-03</span>, <span class="fl">1.04E-02</span>, <span class="fl">1.33E-02</span>, <span class="fl">1.78E-02</span>, <span class="fl">2.40E-02</span>,</a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">                  <span class="fl">3.52E-02</span>, <span class="fl">5.10E-02</span>, <span class="fl">7.23E-02</span>, <span class="fl">0.101765</span>, <span class="fl">0.1486</span>,</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">                  <span class="fl">0.203647</span>, <span class="fl">0.308825</span>, <span class="fl">0.484353</span>, <span class="fl">0.743772</span>, <span class="fl">1.11587</span>)</a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7"></a>
+<a class="sourceLine" id="cb3-8" data-line-number="8"><span class="co">#Genetic variance. Here a second order Legendre polynomial was used. So G will be a 3 x 3 matrix of </span></a>
+<a class="sourceLine" id="cb3-9" data-line-number="9">Omega &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">c</span>(<span class="fl">0.583091</span>, <span class="fl">0.456320</span>, <span class="fl">0.117960</span>,</a>
+<a class="sourceLine" id="cb3-10" data-line-number="10">                  <span class="fl">0.456320</span>, <span class="fl">0.360961</span>, <span class="fl">0.945203E-01</span>,</a>
+<a class="sourceLine" id="cb3-11" data-line-number="11">                  <span class="fl">0.117960</span>, <span class="fl">0.945203E-01</span>, <span class="fl">0.251287E-01</span>), <span class="dv">3</span>, <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb3-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb3-13" data-line-number="13"><span class="co">#Experimental variance</span></a>
+<a class="sourceLine" id="cb3-14" data-line-number="14">P &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">c</span>(<span class="fl">0.603125E-01</span>, <span class="fl">0.400317E-01</span>,</a>
+<a class="sourceLine" id="cb3-15" data-line-number="15">              <span class="fl">0.400317E-01</span>, <span class="fl">0.267477E-01</span>), <span class="dv">2</span>, <span class="dv">2</span>)</a></code></pre></div>
+<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1"><span class="kw">library</span>(MASS)</a>
+<a class="sourceLine" id="cb4-2" data-line-number="2">Idnt &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> Inds, <span class="dt">nrow =</span> Inds)</a>
+<a class="sourceLine" id="cb4-3" data-line-number="3"><span class="kw">diag</span>(Idnt) &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-4" data-line-number="4">PhiG.star &lt;-<span class="st"> </span><span class="kw">kronecker</span>(Idnt, PhiG) <span class="co">#q*t x q*k; 7140 1071</span></a>
 <a class="sourceLine" id="cb4-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb4-6" data-line-number="6"><span class="co">#Genetic variance. Here a second order Legendre polynomial was used. So G will be a 3 x 3 matrix of </span></a>
-<a class="sourceLine" id="cb4-7" data-line-number="7">G.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">c</span>(<span class="fl">0.629183</span>, <span class="fl">0.495574</span>, <span class="fl">0.129607</span>,</a>
-<a class="sourceLine" id="cb4-8" data-line-number="8">                  <span class="fl">0.495574</span>, <span class="fl">0.394557</span>, <span class="fl">0.104540</span>,</a>
-<a class="sourceLine" id="cb4-9" data-line-number="9">                  <span class="fl">0.129607</span>, <span class="fl">0.104540</span>, <span class="fl">0.281278E-01</span>), <span class="dv">3</span>, <span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb4-10" data-line-number="10"></a>
-<a class="sourceLine" id="cb4-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb4-12" data-line-number="12">Phi &lt;-<span class="st"> </span><span class="kw">stdtime</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="dv">2</span>) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(<span class="kw">legendre</span>(<span class="dv">2</span>, <span class="dt">gengler =</span> F))</a>
-<a class="sourceLine" id="cb4-13" data-line-number="13">G.COV &lt;-<span class="st"> </span>Phi <span class="op">%*%</span><span class="st"> </span>G.mat <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(Phi)</a>
-<a class="sourceLine" id="cb4-14" data-line-number="14">Gvar &lt;-<span class="st"> </span><span class="kw">diag</span>(G.COV)</a>
-<a class="sourceLine" id="cb4-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb4-16" data-line-number="16"><span class="kw">print</span>(Gvar)</a></code></pre></div>
-<pre><code>##  [1] 0.003315536 0.004143516 0.006137579 0.009818208 0.016172086
-##  [6] 0.026652104 0.043177351 0.068133123 0.104370916 0.155208431
-## [11] 0.224429573 0.316284446 0.435489361 0.587226831 0.777145571
-## [16] 1.011360500 1.296452740 1.639469615 2.047924655 2.529797588</code></pre>
-</section>
-<section id="calculating-p-values" class="level1">
-<h1>Calculating <span class="math inline">\(p\)</span>-values</h1>
-<section id="variance-of-snp-effects" class="level2">
-<h2>Variance of SNP effects</h2>
-<p>The variance of marker effects at each time point obtained through TP or RR approaches was calculated following the methods outlined by . Since we solve for RR-derived GEBVs at each time point, the models for the TP and RR approaches can both be parameterized as</p>
-<p><span class="math display">\[\mathbf{y} = \mathbf{Xb} + \mathbf{Zu} + \mathbf{Qs} +  \mathbf{e}\]</span></p>
-<p>where all vectors and matrices are defined in previous sections except <span class="math inline">\(\mathbf{b}\)</span>, which is the average PSA at each time point and <span class="math inline">\(\mathbf{X}\)</span> is an incidence matrix that relates the mean PSA to the observations.</p>
-<p>The variance of SNP effects is obtained using</p>
-<p><span class="math display">\[\text{Var}(\boldsymbol{\hat{\beta}}) = \text{Var}(\mathbf{W'_{sc}G^{-1}\hat{g}}) = \mathbf{W'_{sc}G^{-1}}\text{Var}(\mathbf{\hat{g}})\mathbf{G^{-1}W_{sc} }\]</span></p>
-<p>and Var(<span class="math inline">\(\mathbf{\hat{g}}\)</span>) can be obtained using</p>
-<p><span class="math display">\[\text{Var}(\mathbf{\hat{g}}) = \text{Var}(\mathbf{g}) - \mathbf{C^{aa}} = \mathbf{G\sigma^{2}_{g}} - \mathbf{C^{aa}}\]</span></p>
-<p>Substituting the expression above into the expression for <span class="math inline">\(\text{Var}(\boldsymbol{\hat{\beta}})\)</span> we obtain</p>
-<p><span class="math display">\[\text{Var}(\boldsymbol{\hat{\beta}}) = \mathbf{W'_{sc}G^{-1}}(\mathbf{G\sigma^{2}_{g}} - \mathbf{C^{aa}})\mathbf{G^{-1}W_{sc} } \\
-  = \mathbf{W'_{sc}G^{-1}W_{sc}}\sigma^2_g - \mathbf{W'_{sc}G^{-1}C^{aa}G^{-1}W_{sc} }\]</span></p>
-<p>Here, <span class="math inline">\(\mathbf{C^{aa}}\)</span> is obtained by inverting the coefficient matrix of the mixed model equation outlined by , and is provided below.</p>
-<p><span class="math display">\[\mathbf{C^{aa}} = \sigma^2_e(\mathbf{I - X(X'X)^{-1}X' + G^{-1}\lambda})^{-1}, \lambda = \frac{\sigma^2_e}{\sigma^2_g}\]</span></p>
-</section>
-<section id="obtaining-p-values-for-marker-effects" class="level2">
-<h2>Obtaining <span class="math inline">\(p\)</span>-values for marker effects</h2>
-<p>SNP effects for SNP<span class="math inline">\(_j\)</span> at time <span class="math inline">\(t\)</span> were divided by their corresponding <span class="math inline">\(\text{Var}(\boldsymbol{\hat{\beta}})\)</span> using</p>
-<p><span class="math display">\[\text{SNP}_{jt} = \frac{ \mathbf{\hat{\beta}} }{ \sqrt{\text{Var}(\mathbf{\hat{\beta})}} }\]</span></p>
-<p>The <span class="math inline">\(p\)</span>-values for marker effects were calculated as 1 minus the cumulative probability density of the absolute value of SNP<span class="math inline">\(_{jt}\)</span>, and this number was subsequently multiplied by two. This is summarized as follows.</p>
-<p><span class="math display">\[p\text{-value}_{SNP_{jt}} = 2(1 - \phi (|\text{SNP}_{jt}|))\]</span></p>
-</section>
-<section id="code-for-p-values-for-tp" class="level2">
-<h2>Code for <span class="math inline">\(p\)</span>-values for TP</h2>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1"><span class="co">#G &lt;- as.matrix( read.table(&quot;/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/G.mat.txt&quot;, header = T, sep = &quot;\t&quot;) )</span></a>
-<a class="sourceLine" id="cb6-2" data-line-number="2"><span class="co">#Eff.mat &lt;- as.matrix(read.csv(&quot;/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/SingleTP/Eff.mat.TP.csv&quot;, header = T) )</span></a>
-<a class="sourceLine" id="cb6-3" data-line-number="3"><span class="co">#Zsc &lt;- t( as.matrix (read.table(&quot;/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/Zsc.txt&quot;, header = T, sep = &quot;\t&quot;) ) )</span></a>
-<a class="sourceLine" id="cb6-4" data-line-number="4">G &lt;-<span class="st"> </span><span class="kw">as.matrix</span>( <span class="kw">read.table</span>(<span class="st">&quot;/work/walia/malachyc/GWAS_RR/TP/G.mat.txt&quot;</span>, <span class="dt">header =</span> T, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>) )</a>
-<a class="sourceLine" id="cb6-5" data-line-number="5">Eff.mat &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(<span class="kw">read.csv</span>(<span class="st">&quot;/work/walia/malachyc/GWAS_RR/TP/Eff.mat.TP.csv&quot;</span>, <span class="dt">header =</span> T) )</a>
-<a class="sourceLine" id="cb6-6" data-line-number="6">Zsc &lt;-<span class="st"> </span><span class="kw">t</span>( <span class="kw">as.matrix</span> (<span class="kw">read.table</span>(<span class="st">&quot;/work/walia/malachyc/GWAS_RR/TP/Zsc.txt&quot;</span>, <span class="dt">header =</span> T, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>) ) )</a>
-<a class="sourceLine" id="cb6-7" data-line-number="7"></a>
-<a class="sourceLine" id="cb6-8" data-line-number="8">Resvar &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="fl">0.000939236</span>, <span class="fl">1.49797e-03</span>, <span class="fl">0.002367530</span>, <span class="fl">0.003663920</span>,</a>
-<a class="sourceLine" id="cb6-9" data-line-number="9">            <span class="fl">0.00572549</span>, <span class="fl">0.00870432</span>, <span class="fl">0.01314460</span>, <span class="fl">0.0190308</span>, <span class="fl">0.0256669</span>,</a>
-<a class="sourceLine" id="cb6-10" data-line-number="10">            <span class="fl">0.0361005</span>, <span class="fl">0.0518562</span>, <span class="fl">0.0716713</span>, <span class="fl">0.0987518</span>, <span class="fl">0.136906</span>,</a>
-<a class="sourceLine" id="cb6-11" data-line-number="11">            <span class="fl">0.183834</span>, <span class="fl">0.239530</span>, <span class="fl">0.320283</span>, <span class="fl">0.425670</span>, <span class="fl">0.557633</span>, <span class="fl">0.713288</span>)</a>
-<a class="sourceLine" id="cb6-12" data-line-number="12"></a>
-<a class="sourceLine" id="cb6-13" data-line-number="13"><span class="co">#Genetic variance. Here a second order Legendre polynomial was used. So G will be a 3 x 3 matrix of </span></a>
-<a class="sourceLine" id="cb6-14" data-line-number="14">Gvar &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="fl">0.001281870</span>, <span class="fl">1.97533e-03</span>, <span class="fl">0.002975420</span>, <span class="fl">0.004486940</span>,</a>
-<a class="sourceLine" id="cb6-15" data-line-number="15">           <span class="fl">0.00688775</span>, <span class="fl">0.01172790</span>, <span class="fl">0.01825820</span>, <span class="fl">0.0282031</span>, <span class="fl">0.0404264</span>,</a>
-<a class="sourceLine" id="cb6-16" data-line-number="16">           <span class="fl">0.0618636</span>, <span class="fl">0.0889936</span>, <span class="fl">0.1257470</span>, <span class="fl">0.1763360</span>, <span class="fl">0.245715</span>,</a>
-<a class="sourceLine" id="cb6-17" data-line-number="17">           <span class="fl">0.345742</span>, <span class="fl">0.480172</span>, <span class="fl">0.668682</span>, <span class="fl">0.948812</span>, <span class="fl">1.223190</span>, <span class="fl">1.630200</span>)</a>
-<a class="sourceLine" id="cb6-18" data-line-number="18"></a>
-<a class="sourceLine" id="cb6-19" data-line-number="19"></a>
-<a class="sourceLine" id="cb6-20" data-line-number="20"><span class="kw">print</span>(<span class="st">&quot;COV matrices finsihed&quot;</span>)</a>
-<a class="sourceLine" id="cb6-21" data-line-number="21"></a>
-<a class="sourceLine" id="cb6-22" data-line-number="22">pvalue.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="dv">20</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc))</a>
-<a class="sourceLine" id="cb6-23" data-line-number="23">SD.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="dv">20</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc))</a>
-<a class="sourceLine" id="cb6-24" data-line-number="24"></a>
-<a class="sourceLine" id="cb6-25" data-line-number="25"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
-<a class="sourceLine" id="cb6-26" data-line-number="26">  <span class="kw">print</span>(<span class="kw">paste0</span>(<span class="st">&quot;Doing part &quot;</span>, i))</a>
-<a class="sourceLine" id="cb6-27" data-line-number="27">  X &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">357</span>), <span class="dt">nrow =</span> <span class="kw">nrow</span>(G), <span class="dt">ncol =</span> <span class="dv">1</span>, <span class="dt">byrow =</span> T)</a>
-<a class="sourceLine" id="cb6-28" data-line-number="28"></a>
-<a class="sourceLine" id="cb6-29" data-line-number="29">  <span class="co">#Z is the incidence matrix to allocate phenotypic observations to individuals; Identity matrix</span></a>
-<a class="sourceLine" id="cb6-30" data-line-number="30">  Z &lt;-<span class="st"> </span><span class="kw">diag</span>(<span class="kw">nrow</span>(G))</a>
-<a class="sourceLine" id="cb6-31" data-line-number="31"></a>
-<a class="sourceLine" id="cb6-32" data-line-number="32">  <span class="co">#This is the middle part of C^aa</span></a>
-<a class="sourceLine" id="cb6-33" data-line-number="33">  <span class="co">#X(X'X)^{−1}X'</span></a>
-<a class="sourceLine" id="cb6-34" data-line-number="34">  Z2 &lt;-<span class="st"> </span>X <span class="op">%*%</span><span class="st"> </span><span class="kw">solve</span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>X) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(X) <span class="co"># 357 x 357</span></a>
-<a class="sourceLine" id="cb6-35" data-line-number="35">  G_inv &lt;-<span class="st"> </span><span class="kw">solve</span>(G)</a>
-<a class="sourceLine" id="cb6-36" data-line-number="36"></a>
-<a class="sourceLine" id="cb6-37" data-line-number="37">  part1 &lt;-<span class="st"> </span><span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span>G_inv <span class="op">%*%</span><span class="st"> </span>Zsc <span class="co">#m x m </span></a>
-<a class="sourceLine" id="cb6-38" data-line-number="38">  sig.g =<span class="st"> </span>Gvar[i]</a>
-<a class="sourceLine" id="cb6-39" data-line-number="39">  sig.e =<span class="st">  </span>Resvar[i]</a>
-<a class="sourceLine" id="cb6-40" data-line-number="40">  lambda =<span class="st"> </span>sig.e <span class="op">/</span><span class="st"> </span>sig.g</a>
-<a class="sourceLine" id="cb6-41" data-line-number="41">  </a>
-<a class="sourceLine" id="cb6-42" data-line-number="42">  Caa &lt;-<span class="st"> </span>(<span class="kw">solve</span>(<span class="kw">diag</span>(<span class="kw">nrow</span>(Zsc)) <span class="op">-</span><span class="st"> </span>Z2 <span class="op">+</span><span class="st"> </span>(G_inv <span class="op">*</span><span class="st"> </span>lambda))) <span class="op">*</span><span class="st"> </span>sig.e <span class="co">#357 x 357</span></a>
-<a class="sourceLine" id="cb6-43" data-line-number="43">  </a>
-<a class="sourceLine" id="cb6-44" data-line-number="44">  part2 &lt;-<span class="st"> </span><span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span>G_inv <span class="op">%*%</span><span class="st"> </span>Caa <span class="op">%*%</span><span class="st"> </span>G_inv <span class="op">%*%</span><span class="st"> </span>Zsc <span class="co"># m x m</span></a>
-<a class="sourceLine" id="cb6-45" data-line-number="45">  </a>
-<a class="sourceLine" id="cb6-46" data-line-number="46">  <span class="co">#Only interested in the diagonal elements</span></a>
-<a class="sourceLine" id="cb6-47" data-line-number="47">  var.SNPs &lt;-<span class="st"> </span><span class="kw">diag</span>( part1 <span class="op">*</span><span class="st"> </span>sig.g <span class="op">-</span><span class="st"> </span>part2 ) <span class="co"># 33690</span></a>
-<a class="sourceLine" id="cb6-48" data-line-number="48">  <span class="kw">rm</span>(part2)</a>
-<a class="sourceLine" id="cb6-49" data-line-number="49">  <span class="co">#Standard deviation snp effects</span></a>
-<a class="sourceLine" id="cb6-50" data-line-number="50">  sd.SNPs &lt;-<span class="st"> </span><span class="kw">sqrt</span>(var.SNPs)</a>
-<a class="sourceLine" id="cb6-51" data-line-number="51"></a>
-<a class="sourceLine" id="cb6-52" data-line-number="52">  <span class="co">#SNP_effect /Standard deviaton of snp effects</span></a>
-<a class="sourceLine" id="cb6-53" data-line-number="53">  SNPe_ad &lt;-<span class="st"> </span>Eff.mat[,i] <span class="op">/</span><span class="st"> </span>sd.SNPs</a>
-<a class="sourceLine" id="cb6-54" data-line-number="54">  pvalue.mat[,i] &lt;-<span class="st"> </span><span class="dv">2</span><span class="op">*</span>(<span class="dv">1</span><span class="op">-</span><span class="kw">pnorm</span>(<span class="kw">abs</span>(SNPe_ad)))</a>
-<a class="sourceLine" id="cb6-55" data-line-number="55">}</a>
-<a class="sourceLine" id="cb6-56" data-line-number="56"></a>
-<a class="sourceLine" id="cb6-57" data-line-number="57"><span class="kw">write.table</span>(pvalue.mat, <span class="st">&quot;/work/walia/malachyc/GWAS_RR/TP/pvals.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">row.names =</span> T, <span class="dt">col.names =</span> T)</a>
-<a class="sourceLine" id="cb6-58" data-line-number="58"></a>
-<a class="sourceLine" id="cb6-59" data-line-number="59"><span class="kw">write.table</span>(SD.mat, <span class="st">&quot;/work/walia/malachyc/GWAS_RR/TP/SDs.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">row.names =</span> T, <span class="dt">col.names =</span> T)</a></code></pre></div>
-</section>
-<section id="code-for-p-values-for-rr" class="level2">
-<h2>Code for <span class="math inline">\(p\)</span>-values for RR</h2>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1"><span class="co">##Return coefficient matrix (lambda) of n-th order Legendre polynomials. Scaling method implemented by Gengler et. al. (1999) converts constant Legendre polynomial coefficients into 1</span></a>
-<a class="sourceLine" id="cb7-2" data-line-number="2"><span class="st">`</span><span class="dt">legendre</span><span class="st">`</span> &lt;-</a>
-<a class="sourceLine" id="cb7-3" data-line-number="3"><span class="st">  </span><span class="cf">function</span>(n, gengler){</a>
-<a class="sourceLine" id="cb7-4" data-line-number="4">    </a>
-<a class="sourceLine" id="cb7-5" data-line-number="5">    <span class="cf">if</span> (<span class="kw">nargs</span>()<span class="op">==</span><span class="dv">1</span>){</a>
-<a class="sourceLine" id="cb7-6" data-line-number="6">      gengler &lt;-<span class="st"> </span><span class="ot">TRUE</span>   </a>
-<a class="sourceLine" id="cb7-7" data-line-number="7">    }</a>
-<a class="sourceLine" id="cb7-8" data-line-number="8">    </a>
-<a class="sourceLine" id="cb7-9" data-line-number="9">    <span class="cf">if</span> (gengler <span class="op">!=</span><span class="st"> </span><span class="ot">TRUE</span> <span class="op">&amp;</span><span class="st"> </span>gengler <span class="op">!=</span><span class="st"> </span><span class="ot">FALSE</span>){</a>
-<a class="sourceLine" id="cb7-10" data-line-number="10">      gengler=<span class="ot">TRUE</span>  </a>
-<a class="sourceLine" id="cb7-11" data-line-number="11">    }</a>
-<a class="sourceLine" id="cb7-12" data-line-number="12">    </a>
-<a class="sourceLine" id="cb7-13" data-line-number="13">    N &lt;-<span class="st"> </span>n<span class="op">+</span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb7-14" data-line-number="14">    L &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>,<span class="dt">nrow=</span>N, <span class="dt">ncol=</span>N)</a>
-<a class="sourceLine" id="cb7-15" data-line-number="15">    </a>
-<a class="sourceLine" id="cb7-16" data-line-number="16">    <span class="cf">for</span>(i <span class="cf">in</span> (<span class="dv">1</span><span class="op">:</span>N)){</a>
-<a class="sourceLine" id="cb7-17" data-line-number="17">      <span class="cf">if</span>(i<span class="op">==</span><span class="dv">1</span>){</a>
-<a class="sourceLine" id="cb7-18" data-line-number="18">        L[i,i] &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb7-19" data-line-number="19">      }</a>
-<a class="sourceLine" id="cb7-20" data-line-number="20">      <span class="cf">else</span> <span class="cf">if</span>(i<span class="op">==</span><span class="dv">2</span>){</a>
-<a class="sourceLine" id="cb7-21" data-line-number="21">        L[i,i] &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb7-22" data-line-number="22">      }</a>
-<a class="sourceLine" id="cb7-23" data-line-number="23">      <span class="cf">else</span>  {</a>
-<a class="sourceLine" id="cb7-24" data-line-number="24">        tmp &lt;-<span class="st"> </span>L[i<span class="dv">-1</span>,]</a>
-<a class="sourceLine" id="cb7-25" data-line-number="25">        tmp2 &lt;-<span class="st"> </span><span class="kw">as.numeric</span>()</a>
-<a class="sourceLine" id="cb7-26" data-line-number="26">        tmp2 &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="dv">0</span>,tmp[<span class="dv">1</span><span class="op">:</span>(N<span class="dv">-1</span>)])</a>
-<a class="sourceLine" id="cb7-27" data-line-number="27">        L[i,] &lt;-<span class="st"> </span>(<span class="dv">1</span><span class="op">/</span>(i<span class="dv">-2</span><span class="op">+</span><span class="dv">1</span>))<span class="op">*</span>( (<span class="dv">2</span><span class="op">*</span>(i<span class="dv">-2</span>) <span class="op">+</span><span class="st"> </span><span class="dv">1</span>)<span class="op">*</span>tmp2 <span class="op">-</span>(i<span class="dv">-2</span>)<span class="op">*</span>L[i<span class="dv">-2</span>,] )</a>
-<a class="sourceLine" id="cb7-28" data-line-number="28">      }</a>
-<a class="sourceLine" id="cb7-29" data-line-number="29">    }</a>
-<a class="sourceLine" id="cb7-30" data-line-number="30">    </a>
-<a class="sourceLine" id="cb7-31" data-line-number="31">    <span class="co"># Normalize</span></a>
-<a class="sourceLine" id="cb7-32" data-line-number="32">    <span class="cf">for</span> (j <span class="cf">in</span> (<span class="dv">1</span><span class="op">:</span>N)){   </a>
-<a class="sourceLine" id="cb7-33" data-line-number="33">      L[j,] &lt;-<span class="st"> </span>(<span class="kw">sqrt</span>( (<span class="dv">2</span><span class="op">*</span>(j<span class="dv">-1</span>)<span class="op">+</span><span class="dv">1</span>)<span class="op">/</span><span class="dv">2</span>)  )<span class="op">*</span>L[j,]</a>
-<a class="sourceLine" id="cb7-34" data-line-number="34">    }</a>
-<a class="sourceLine" id="cb7-35" data-line-number="35">    </a>
-<a class="sourceLine" id="cb7-36" data-line-number="36">    </a>
-<a class="sourceLine" id="cb7-37" data-line-number="37">    <span class="co"># Gengler (1999)</span></a>
-<a class="sourceLine" id="cb7-38" data-line-number="38">    <span class="cf">if</span> (gengler<span class="op">==</span><span class="ot">TRUE</span>){</a>
-<a class="sourceLine" id="cb7-39" data-line-number="39">      L &lt;-<span class="st"> </span><span class="kw">sqrt</span>(<span class="dv">2</span>)<span class="op">*</span>L</a>
-<a class="sourceLine" id="cb7-40" data-line-number="40">    }</a>
-<a class="sourceLine" id="cb7-41" data-line-number="41">    </a>
-<a class="sourceLine" id="cb7-42" data-line-number="42">    <span class="kw">return</span>(L)</a>
-<a class="sourceLine" id="cb7-43" data-line-number="43">    </a>
-<a class="sourceLine" id="cb7-44" data-line-number="44">  }</a>
-<a class="sourceLine" id="cb7-45" data-line-number="45"></a>
-<a class="sourceLine" id="cb7-46" data-line-number="46"><span class="co">##Given time points covariate and order of fit for Legendre polynomials, return matrix 'M' containing the polynomials of standardized time. 'M' is order t (number of time points) by k (order of Legendre polynomials)</span></a>
-<a class="sourceLine" id="cb7-47" data-line-number="47">stdtime &lt;-<span class="st"> </span><span class="cf">function</span>(t, n, tmax, tmin){</a>
-<a class="sourceLine" id="cb7-48" data-line-number="48">  <span class="cf">if</span>(<span class="kw">missing</span>(tmax)) {</a>
-<a class="sourceLine" id="cb7-49" data-line-number="49">    tmax &lt;-<span class="st"> </span>t[<span class="kw">which.max</span>(t)]</a>
-<a class="sourceLine" id="cb7-50" data-line-number="50">  }</a>
-<a class="sourceLine" id="cb7-51" data-line-number="51">  <span class="cf">if</span>(<span class="kw">missing</span>(tmin)) {</a>
-<a class="sourceLine" id="cb7-52" data-line-number="52">    tmin &lt;-<span class="st"> </span>t[<span class="kw">which.min</span>(t)]</a>
-<a class="sourceLine" id="cb7-53" data-line-number="53">  }</a>
-<a class="sourceLine" id="cb7-54" data-line-number="54">  </a>
-<a class="sourceLine" id="cb7-55" data-line-number="55">  N &lt;-<span class="st"> </span>n<span class="op">+</span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb7-56" data-line-number="56">  M &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">nrow=</span><span class="kw">length</span>(t), <span class="dt">ncol=</span>N)</a>
-<a class="sourceLine" id="cb7-57" data-line-number="57">  a &lt;-<span class="st"> </span><span class="dv">-1</span> <span class="op">+</span><span class="st"> </span><span class="dv">2</span><span class="op">*</span>(t<span class="op">-</span>tmin)<span class="op">/</span>(tmax <span class="op">-</span><span class="st"> </span>tmin)</a>
-<a class="sourceLine" id="cb7-58" data-line-number="58">  M[,<span class="dv">1</span>] &lt;-<span class="st"> </span><span class="dv">1</span></a>
-<a class="sourceLine" id="cb7-59" data-line-number="59">  </a>
-<a class="sourceLine" id="cb7-60" data-line-number="60">  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">2</span><span class="op">:</span>N){</a>
-<a class="sourceLine" id="cb7-61" data-line-number="61">    M[,i] &lt;-<span class="st"> </span>a<span class="op">^</span>(i<span class="dv">-1</span>)</a>
-<a class="sourceLine" id="cb7-62" data-line-number="62">  }</a>
-<a class="sourceLine" id="cb7-63" data-line-number="63">  </a>
-<a class="sourceLine" id="cb7-64" data-line-number="64">  <span class="kw">return</span>(M)</a>
-<a class="sourceLine" id="cb7-65" data-line-number="65">}</a>
-<a class="sourceLine" id="cb7-66" data-line-number="66"></a>
-<a class="sourceLine" id="cb7-67" data-line-number="67"><span class="co">#G &lt;- read.table(&quot;/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/G.mat.txt&quot;, header = T, sep = &quot;\t&quot;)</span></a>
-<a class="sourceLine" id="cb7-68" data-line-number="68"><span class="co">#Eff.mat &lt;- read.csv(&quot;/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/Eff.mat.csv&quot;, header = T)</span></a>
-<a class="sourceLine" id="cb7-69" data-line-number="69"><span class="co">#Zsc &lt;- read.table(&quot;/Users/malachycampbell/Desktop/ASREML_SA/RR_PSA.Cont/GWAS/TuskerFiles/Zsc.txt&quot;, header = T, sep = &quot;\t&quot;)</span></a>
-<a class="sourceLine" id="cb7-70" data-line-number="70">G &lt;-<span class="st"> </span><span class="kw">as.matrix</span>( <span class="kw">read.table</span>(<span class="st">&quot;/work/walia/malachyc/GWAS_RR/G.mat.txt&quot;</span>, <span class="dt">header =</span> T, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>) )</a>
-<a class="sourceLine" id="cb7-71" data-line-number="71">Eff.mat &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(<span class="kw">read.csv</span>(<span class="st">&quot;/work/walia/malachyc/GWAS_RR/Eff.mat.csv&quot;</span>, <span class="dt">header =</span> T) )</a>
-<a class="sourceLine" id="cb7-72" data-line-number="72">Zsc &lt;-<span class="st"> </span><span class="kw">t</span>( <span class="kw">as.matrix</span> (<span class="kw">read.table</span>(<span class="st">&quot;/work/walia/malachyc/GWAS_RR/Zsc.txt&quot;</span>, <span class="dt">header =</span> T, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>) ) )</a>
-<a class="sourceLine" id="cb7-73" data-line-number="73"></a>
-<a class="sourceLine" id="cb7-74" data-line-number="74"><span class="kw">print</span>(<span class="st">&quot;Loaded all files&quot;</span>)</a>
-<a class="sourceLine" id="cb7-75" data-line-number="75"></a>
-<a class="sourceLine" id="cb7-76" data-line-number="76">Resvar &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="fl">1.39E-03</span>, <span class="fl">1.22E-03</span>, <span class="fl">2.06E-03</span>, <span class="fl">3.33E-03</span>, <span class="fl">5.32E-03</span>,</a>
-<a class="sourceLine" id="cb7-77" data-line-number="77">            <span class="fl">7.88E-03</span>, <span class="fl">1.18E-02</span>, <span class="fl">1.53E-02</span>, <span class="fl">2.04E-02</span>, <span class="fl">2.75E-02</span>,</a>
-<a class="sourceLine" id="cb7-78" data-line-number="78">            <span class="fl">4.02E-02</span>, <span class="fl">5.80E-02</span>, <span class="fl">8.19E-02</span>, <span class="fl">0.114587</span>, <span class="fl">0.164339</span>, </a>
-<a class="sourceLine" id="cb7-79" data-line-number="79">            <span class="fl">0.22392</span>, <span class="fl">0.336068</span>, <span class="fl">0.521511</span>, <span class="fl">0.78897</span>, <span class="fl">1.17139</span>)</a>
-<a class="sourceLine" id="cb7-80" data-line-number="80"></a>
-<a class="sourceLine" id="cb7-81" data-line-number="81"><span class="co">#Genetic variance. Here a second order Legendre polynomial was used. So G will be a 3 x 3 matrix of </span></a>
-<a class="sourceLine" id="cb7-82" data-line-number="82">G.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">c</span>(<span class="fl">0.629183</span>, <span class="fl">0.495574</span>, <span class="fl">0.129607</span>,</a>
-<a class="sourceLine" id="cb7-83" data-line-number="83">                  <span class="fl">0.495574</span>, <span class="fl">0.394557</span>, <span class="fl">0.104540</span>,</a>
-<a class="sourceLine" id="cb7-84" data-line-number="84">                  <span class="fl">0.129607</span>, <span class="fl">0.104540</span>, <span class="fl">0.281278E-01</span>), <span class="dv">3</span>, <span class="dv">3</span>)</a>
-<a class="sourceLine" id="cb7-85" data-line-number="85"></a>
-<a class="sourceLine" id="cb7-86" data-line-number="86"></a>
-<a class="sourceLine" id="cb7-87" data-line-number="87">Phi &lt;-<span class="st"> </span><span class="kw">stdtime</span>(<span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="dv">2</span>) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(<span class="kw">legendre</span>(<span class="dv">2</span>, <span class="dt">gengler =</span> F))</a>
-<a class="sourceLine" id="cb7-88" data-line-number="88">G.COV &lt;-<span class="st"> </span>Phi <span class="op">%*%</span><span class="st"> </span>G.mat <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(Phi)</a>
-<a class="sourceLine" id="cb7-89" data-line-number="89">Gvar &lt;-<span class="st"> </span><span class="kw">diag</span>(G.COV)</a>
-<a class="sourceLine" id="cb7-90" data-line-number="90"></a>
-<a class="sourceLine" id="cb7-91" data-line-number="91"><span class="kw">print</span>(<span class="st">&quot;COV matrices finsihed&quot;</span>)</a>
-<a class="sourceLine" id="cb7-92" data-line-number="92"></a>
-<a class="sourceLine" id="cb7-93" data-line-number="93">pvalue.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="dv">20</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc))</a>
-<a class="sourceLine" id="cb7-94" data-line-number="94">SD.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="dv">20</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc))</a>
-<a class="sourceLine" id="cb7-95" data-line-number="95"></a>
-<a class="sourceLine" id="cb7-96" data-line-number="96">X &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="kw">rep</span>(<span class="dv">1</span>, <span class="dv">357</span>), <span class="dt">nrow =</span> <span class="kw">nrow</span>(G), <span class="dt">ncol =</span> <span class="dv">1</span>, <span class="dt">byrow =</span> T)</a>
-<a class="sourceLine" id="cb7-97" data-line-number="97"></a>
-<a class="sourceLine" id="cb7-98" data-line-number="98"><span class="co">#Z is the incidence matrix to allocate phenotypic observations to individuals; Identity matrix</span></a>
-<a class="sourceLine" id="cb7-99" data-line-number="99">Z &lt;-<span class="st"> </span><span class="kw">diag</span>(<span class="kw">nrow</span>(G))</a>
-<a class="sourceLine" id="cb7-100" data-line-number="100"></a>
-<a class="sourceLine" id="cb7-101" data-line-number="101"><span class="co">#This is the middle part of C^aa</span></a>
-<a class="sourceLine" id="cb7-102" data-line-number="102"><span class="co">#X(X'X)^{−1}X'</span></a>
-<a class="sourceLine" id="cb7-103" data-line-number="103">Z2 &lt;-<span class="st"> </span>X <span class="op">%*%</span><span class="st"> </span><span class="kw">solve</span>(<span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>X) <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(X) <span class="co"># 357 x 357</span></a>
-<a class="sourceLine" id="cb7-104" data-line-number="104"></a>
-<a class="sourceLine" id="cb7-105" data-line-number="105">G_inv &lt;-<span class="st"> </span><span class="kw">solve</span>(G)</a>
-<a class="sourceLine" id="cb7-106" data-line-number="106"></a>
-<a class="sourceLine" id="cb7-107" data-line-number="107"><span class="co">#This is the first part of Var(\hat{g}) = Z'G^{-1}Z \sigma^2_g − Z'G−1 C^{aa}G^{−1}Z, and we'll calculate it here once and reuse it since it won't change for each day.</span></a>
-<a class="sourceLine" id="cb7-108" data-line-number="108">part1 &lt;-<span class="st"> </span><span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span>G_inv <span class="op">%*%</span><span class="st"> </span>Zsc <span class="co">#m x m </span></a>
-<a class="sourceLine" id="cb7-109" data-line-number="109"></a>
-<a class="sourceLine" id="cb7-110" data-line-number="110"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
-<a class="sourceLine" id="cb7-111" data-line-number="111">  <span class="kw">print</span>(<span class="kw">paste0</span>(<span class="st">&quot;Doing part &quot;</span>, i))</a>
-<a class="sourceLine" id="cb7-112" data-line-number="112">  sig.g =<span class="st"> </span>Gvar[i]</a>
-<a class="sourceLine" id="cb7-113" data-line-number="113">  sig.e =<span class="st">  </span>Resvar[i]</a>
-<a class="sourceLine" id="cb7-114" data-line-number="114">  lambda =<span class="st"> </span>sig.e <span class="op">/</span><span class="st"> </span>sig.g</a>
-<a class="sourceLine" id="cb7-115" data-line-number="115">  </a>
-<a class="sourceLine" id="cb7-116" data-line-number="116">  Caa &lt;-<span class="st"> </span>(<span class="kw">solve</span>(<span class="kw">diag</span>(<span class="kw">nrow</span>(Zsc)) <span class="op">-</span><span class="st"> </span>Z2 <span class="op">+</span><span class="st"> </span>(G_inv <span class="op">*</span><span class="st"> </span>lambda))) <span class="op">*</span><span class="st"> </span>sig.e <span class="co">#357 x 357</span></a>
-<a class="sourceLine" id="cb7-117" data-line-number="117">  </a>
-<a class="sourceLine" id="cb7-118" data-line-number="118">  part2 &lt;-<span class="st"> </span><span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span>G_inv <span class="op">%*%</span><span class="st"> </span>Caa <span class="op">%*%</span><span class="st"> </span>G_inv <span class="op">%*%</span><span class="st"> </span>Zsc <span class="co"># m x m</span></a>
-<a class="sourceLine" id="cb7-119" data-line-number="119">  </a>
-<a class="sourceLine" id="cb7-120" data-line-number="120">  <span class="co">#Only interested in the diagonal elements</span></a>
-<a class="sourceLine" id="cb7-121" data-line-number="121">  var.SNPs &lt;-<span class="st"> </span><span class="kw">diag</span>( part1 <span class="op">*</span><span class="st"> </span>sig.g <span class="op">-</span><span class="st"> </span>part2 ) <span class="co"># 33690</span></a>
-<a class="sourceLine" id="cb7-122" data-line-number="122">  <span class="kw">rm</span>(part2)</a>
-<a class="sourceLine" id="cb7-123" data-line-number="123">  <span class="co">#Standard deviation snp effects</span></a>
-<a class="sourceLine" id="cb7-124" data-line-number="124">  sd.SNPs &lt;-<span class="st"> </span><span class="kw">sqrt</span>(var.SNPs)</a>
-<a class="sourceLine" id="cb7-125" data-line-number="125"></a>
-<a class="sourceLine" id="cb7-126" data-line-number="126">  <span class="co">#SNP_effect /Standard deviaton of snp effects</span></a>
-<a class="sourceLine" id="cb7-127" data-line-number="127">  SNPe_ad &lt;-<span class="st"> </span>Eff.mat[,i] <span class="op">/</span><span class="st"> </span>sd.SNPs</a>
-<a class="sourceLine" id="cb7-128" data-line-number="128">  pvalue.mat[,i] &lt;-<span class="st"> </span><span class="dv">2</span><span class="op">*</span>(<span class="dv">1</span><span class="op">-</span><span class="kw">pnorm</span>(<span class="kw">abs</span>(SNPe_ad)))</a>
-<a class="sourceLine" id="cb7-129" data-line-number="129">}</a>
-<a class="sourceLine" id="cb7-130" data-line-number="130"></a>
-<a class="sourceLine" id="cb7-131" data-line-number="131"><span class="kw">write.table</span>(pvalue.mat, <span class="st">&quot;/work/walia/malachyc/GWAS_RR/pvals.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">row.names =</span> T, <span class="dt">col.names =</span> T)</a>
-<a class="sourceLine" id="cb7-132" data-line-number="132"></a>
-<a class="sourceLine" id="cb7-133" data-line-number="133"><span class="kw">write.table</span>(SD.mat, <span class="st">&quot;/work/walia/malachyc/GWAS_RR/SDs.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">row.names =</span> T, <span class="dt">col.names =</span> T)</a></code></pre></div>
-</section>
-</section>
+<a class="sourceLine" id="cb4-6" data-line-number="6">R.ident &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> Ex <span class="op">*</span><span class="st"> </span>Inds, <span class="dt">nrow =</span> Ex <span class="op">*</span><span class="st"> </span>Inds)</a>
+<a class="sourceLine" id="cb4-7" data-line-number="7"><span class="kw">diag</span>(R.ident) &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb4-8" data-line-number="8">Rinv &lt;-<span class="st"> </span><span class="kw">kronecker</span>(R.ident, <span class="kw">ginv</span>(Resvar)) <span class="co">#21420 x 21420</span></a>
+<a class="sourceLine" id="cb4-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb4-10" data-line-number="10">Omega.i &lt;-<span class="st"> </span><span class="kw">ginv</span>(Omega)</a>
+<a class="sourceLine" id="cb4-11" data-line-number="11">P.i &lt;-<span class="st"> </span><span class="kw">ginv</span>(P)</a></code></pre></div>
+<p>Set up the MME.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1">G &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(<span class="kw">read.table</span>(<span class="st">&quot;DataAndCode/CompCluster/G.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">header =</span> T))</a>
+<a class="sourceLine" id="cb5-2" data-line-number="2">Ginv &lt;-<span class="st"> </span><span class="kw">ginv</span>(G)</a>
+<a class="sourceLine" id="cb5-3" data-line-number="3"></a>
+<a class="sourceLine" id="cb5-4" data-line-number="4">C11 &lt;-<span class="st"> </span><span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>X; <span class="kw">dim</span>(C11) <span class="co">#3 x 3</span></a>
+<a class="sourceLine" id="cb5-5" data-line-number="5">C12 &lt;-<span class="st"> </span><span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Z; <span class="kw">dim</span>(C12) <span class="co">#3 x 1071</span></a>
+<a class="sourceLine" id="cb5-6" data-line-number="6">C13 &lt;-<span class="st"> </span><span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Q; <span class="kw">dim</span>(C13) <span class="co">#3 x 6</span></a>
+<a class="sourceLine" id="cb5-7" data-line-number="7">C21 &lt;-<span class="st"> </span><span class="kw">t</span>(Z) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>X; <span class="kw">dim</span>(C21) <span class="co">#1071 x 3</span></a>
+<a class="sourceLine" id="cb5-8" data-line-number="8">C22 &lt;-<span class="st"> </span>(<span class="kw">t</span>(Z) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Z) <span class="op">+</span><span class="st"> </span><span class="kw">kronecker</span>(Ginv, Omega.i); <span class="kw">dim</span>(C22) <span class="co">#1071 x 1071</span></a>
+<a class="sourceLine" id="cb5-9" data-line-number="9">C23 &lt;-<span class="st"> </span><span class="kw">t</span>(Z) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Q; <span class="kw">dim</span>(C23) <span class="co">#1071 x 6</span></a>
+<a class="sourceLine" id="cb5-10" data-line-number="10">C31 &lt;-<span class="st"> </span><span class="kw">t</span>(Q) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>X; <span class="kw">dim</span>(C31) <span class="co">#6 x 3</span></a>
+<a class="sourceLine" id="cb5-11" data-line-number="11">C32 &lt;-<span class="st"> </span><span class="kw">t</span>(Q) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Z; <span class="kw">dim</span>(C32) <span class="co">#6 x 1071</span></a>
+<a class="sourceLine" id="cb5-12" data-line-number="12">Idnt &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">3</span>, <span class="dt">ncol =</span> <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb5-13" data-line-number="13"><span class="kw">diag</span>(Idnt) &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb5-14" data-line-number="14">C33 &lt;-<span class="st"> </span>(<span class="kw">t</span>(Q) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Q) <span class="op">+</span><span class="st"> </span><span class="kw">kronecker</span>(Idnt, P.i); <span class="kw">dim</span>(C33) <span class="co">#6 x 6</span></a>
+<a class="sourceLine" id="cb5-15" data-line-number="15">  </a>
+<a class="sourceLine" id="cb5-16" data-line-number="16">TopRow &lt;-<span class="st"> </span><span class="kw">cbind</span>(C11, C12, C13) <span class="co">#3 x 1080</span></a>
+<a class="sourceLine" id="cb5-17" data-line-number="17">MidRow &lt;-<span class="st"> </span><span class="kw">cbind</span>(C21, C22, C23) <span class="co">#1071 x 1080</span></a>
+<a class="sourceLine" id="cb5-18" data-line-number="18">BotRow &lt;-<span class="st"> </span><span class="kw">cbind</span>(C31, C32, C33) <span class="co">#6 x 1080</span></a>
+<a class="sourceLine" id="cb5-19" data-line-number="19">  </a>
+<a class="sourceLine" id="cb5-20" data-line-number="20">LHS &lt;-<span class="st"> </span><span class="kw">rbind</span>(TopRow, MidRow, BotRow)</a>
+<a class="sourceLine" id="cb5-21" data-line-number="21">InvLHS &lt;-<span class="st"> </span><span class="kw">ginv</span>(LHS)</a>
+<a class="sourceLine" id="cb5-22" data-line-number="22"></a>
+<a class="sourceLine" id="cb5-23" data-line-number="23">C22 &lt;-<span class="st"> </span>InvLHS[<span class="dv">4</span><span class="op">:</span><span class="dv">1074</span>, <span class="dv">4</span><span class="op">:</span><span class="dv">1074</span>]</a>
+<a class="sourceLine" id="cb5-24" data-line-number="24"></a>
+<a class="sourceLine" id="cb5-25" data-line-number="25">C22.star &lt;-<span class="st"> </span>PhiG.star <span class="op">%*%</span><span class="st"> </span>C22 <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(PhiG.star)</a>
+<a class="sourceLine" id="cb5-26" data-line-number="26"></a>
+<a class="sourceLine" id="cb5-27" data-line-number="27"><span class="kw">rm</span>(LHS)</a>
+<a class="sourceLine" id="cb5-28" data-line-number="28"><span class="kw">rm</span>(InvLHS)</a>
+<a class="sourceLine" id="cb5-29" data-line-number="29"><span class="kw">rm</span>(C22)</a>
+<a class="sourceLine" id="cb5-30" data-line-number="30"><span class="kw">rm</span>(TopRow)</a>
+<a class="sourceLine" id="cb5-31" data-line-number="31"><span class="kw">rm</span>(MidRow)</a>
+<a class="sourceLine" id="cb5-32" data-line-number="32"><span class="kw">rm</span>(BotRow)</a></code></pre></div>
+</div>
+<div id="getting-p-values-at-each-time-point-from-c22" class="section level3">
+<h3>Getting p-values at each time point from C22*</h3>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb6-1" data-line-number="1">Eff.mat &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(<span class="kw">read.csv</span>(<span class="st">&quot;DataAndCode/CompCluster/RR/Eff.mat.csv&quot;</span>, <span class="dt">header =</span> T) )</a>
+<a class="sourceLine" id="cb6-2" data-line-number="2">Zsc &lt;-<span class="st"> </span><span class="kw">t</span>( <span class="kw">as.matrix</span> (<span class="kw">read.table</span>(<span class="st">&quot;Zsc.txt&quot;</span>, <span class="dt">header =</span> T, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>) ) )</a></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb7-1" data-line-number="1">Gvar &lt;-<span class="st"> </span><span class="kw">diag</span>(PhiG <span class="op">%*%</span><span class="st"> </span>Omega <span class="op">%*%</span><span class="st"> </span><span class="kw">t</span>(PhiG))</a></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb8-1" data-line-number="1"><span class="co">#Define all matrices to store the results</span></a>
+<a class="sourceLine" id="cb8-2" data-line-number="2">pvalue.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="dv">20</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc))</a>
+<a class="sourceLine" id="cb8-3" data-line-number="3">SD.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="dv">20</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc))</a>
+<a class="sourceLine" id="cb8-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb8-5" data-line-number="5"><span class="co">#Split into time specific blocks and calculate the SNP effects</span></a>
+<a class="sourceLine" id="cb8-6" data-line-number="6"><span class="co">#calculate index for each line</span></a>
+<a class="sourceLine" id="cb8-7" data-line-number="7">indx &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb8-8" data-line-number="8"><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">356</span>){</a>
+<a class="sourceLine" id="cb8-9" data-line-number="9">  indx &lt;-<span class="st"> </span><span class="kw">c</span>(indx, indx[i] <span class="op">+</span><span class="st"> </span><span class="dv">20</span>)</a>
+<a class="sourceLine" id="cb8-10" data-line-number="10">}</a>
+<a class="sourceLine" id="cb8-11" data-line-number="11"></a>
+<a class="sourceLine" id="cb8-12" data-line-number="12"><span class="cf">for</span> ( day <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
+<a class="sourceLine" id="cb8-13" data-line-number="13">  C22.tmp &lt;-<span class="st"> </span>C22.star[indx, indx]</a>
+<a class="sourceLine" id="cb8-14" data-line-number="14">  </a>
+<a class="sourceLine" id="cb8-15" data-line-number="15">  VarU.hat &lt;-<span class="st"> </span>(G <span class="op">*</span><span class="st"> </span>Gvar[day]) <span class="op">-</span><span class="st"> </span>C22.tmp</a>
+<a class="sourceLine" id="cb8-16" data-line-number="16">  </a>
+<a class="sourceLine" id="cb8-17" data-line-number="17">  <span class="co">#Varg.hat &lt;- (G * Gvar[day]) + (C22.tmp * diag(Resvar)[day])</span></a>
+<a class="sourceLine" id="cb8-18" data-line-number="18">  VarBeta.hat &lt;-<span class="st"> </span><span class="kw">diag</span>(<span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span><span class="kw">ginv</span>(G) <span class="op">%*%</span><span class="st"> </span>VarU.hat <span class="op">%*%</span><span class="st"> </span><span class="kw">ginv</span>(G) <span class="op">%*%</span><span class="st"> </span>Zsc)</a>
+<a class="sourceLine" id="cb8-19" data-line-number="19">  </a>
+<a class="sourceLine" id="cb8-20" data-line-number="20">  <span class="co">#summary(diag(VarBeta.hat))</span></a>
+<a class="sourceLine" id="cb8-21" data-line-number="21">  </a>
+<a class="sourceLine" id="cb8-22" data-line-number="22">  sd.SNPs &lt;-<span class="st"> </span><span class="kw">sqrt</span>(VarBeta.hat)</a>
+<a class="sourceLine" id="cb8-23" data-line-number="23">  </a>
+<a class="sourceLine" id="cb8-24" data-line-number="24">  SNPe_ad &lt;-<span class="st"> </span>Eff.mat[,day] <span class="op">/</span><span class="st"> </span>sd.SNPs</a>
+<a class="sourceLine" id="cb8-25" data-line-number="25">  </a>
+<a class="sourceLine" id="cb8-26" data-line-number="26">  pvalue.mat[,day] &lt;-<span class="st"> </span><span class="dv">2</span><span class="op">*</span>(<span class="dv">1</span><span class="op">-</span><span class="kw">pnorm</span>(<span class="kw">abs</span>(SNPe_ad)))</a>
+<a class="sourceLine" id="cb8-27" data-line-number="27">  SD.mat[,day] &lt;-<span class="st"> </span>sd.SNPs</a>
+<a class="sourceLine" id="cb8-28" data-line-number="28">  </a>
+<a class="sourceLine" id="cb8-29" data-line-number="29">  indx &lt;-<span class="st"> </span>indx <span class="op">+</span><span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb8-30" data-line-number="30">}</a>
+<a class="sourceLine" id="cb8-31" data-line-number="31"></a>
+<a class="sourceLine" id="cb8-32" data-line-number="32"><span class="kw">write.table</span>(pvalue.mat, <span class="st">&quot;pval.mat.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">row.names =</span> T, <span class="dt">col.names =</span> T)</a>
+<a class="sourceLine" id="cb8-33" data-line-number="33"><span class="kw">write.table</span>(SD.mat, <span class="st">&quot;SDmat.mat.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">row.names =</span> T, <span class="dt">col.names =</span> T)</a></code></pre></div>
+</div>
+</div>
+</div>
+<div id="single-time-point-approach" class="section level1">
+<h1>Single time point approach</h1>
+<div id="defining-the-mixed-model-equation-1" class="section level2">
+<h2>Defining the mixed model equation</h2>
+<p>The single time point approach is essentially a univariate gBLUP approach. We fit the following model at each time point <span class="math display">\[\begin{align}
+  \label{eq:VarSNP_matrix}
+  \mathbf{y} &amp;= \mathbf{Xb} + \mathbf{Zu} + \mathbf{Qs} +  \mathbf{e} , 
+\end{align}\]</span> The matrices <span class="math inline">\(\mathbf{X, Z}\)</span> and <span class="math inline">\(\mathbf{Q}\)</span> correspond to incidence matrices for the fixed, random additive genetic and random experimental effect, respectively. Moreover, the dimensions for <span class="math inline">\(\mathbf{X, Z}\)</span> and <span class="math inline">\(\mathbf{Q}\)</span> are <span class="math inline">\(n \times 1\)</span>, <span class="math inline">\(n \times q\)</span> and <span class="math inline">\(n \times e\)</span>, where <span class="math inline">\(n\)</span> is the number of observations at each time point. We assume the random terms are distributed as follows <span class="math inline">\(\mathbf{u} \sim N(0, \mathbf{G}\sigma_g^2)\)</span>, <span class="math inline">\(\mathbf{s} \sim N(0, \mathbf{I}\sigma_s^2)\)</span>, and <span class="math inline">\(\mathbf{e} \sim N(0, \mathbf{I}\sigma_e^2)\)</span>.</p>
+<p>The MME for the TP approach is <span class="math display">\[\begin{align}
+\label{eq:TP.MME}
+\begin{bmatrix}
+\mathbf{X' R^{-1} X} &amp; \mathbf{X' R^{-1} Z} &amp; \mathbf{X' R^{-1} Q}\\
+\mathbf{Z' R^{-1} X} &amp; \mathbf{Z' R^{-1} Z} + \mathbf{G^{-1}} \lambda_g &amp; \mathbf{Z' R^{-1} Q}\\
+\mathbf{Q' R^{-1} X} &amp; \mathbf{Q' R^{-1} Z} &amp; \mathbf{Q' R^{-1} Q} + \mathbf{I} \lambda_s\\
+\end{bmatrix}
+\begin{bmatrix}
+\mathbf{\hat{b}} \\
+\mathbf{\hat{u}}  \\
+\mathbf{\hat{s}} \\
+\end{bmatrix}
+&amp;=
+\begin{bmatrix}
+\mathbf{X' R^{-1} y} \\
+\mathbf{Z' R^{-1} y} \\
+\mathbf{Q' R^{-1} y} \\
+\end{bmatrix}, \\
+\lambda_g = \frac{\sigma_e^2}{\sigma_g^2}; \lambda_s = \frac{\sigma_e^2}{\sigma_s^2}
+\end{align}\]</span></p>
+</div>
+<div id="calculating-textrmvarhatbeta-textrm-at-each-time-point-1" class="section level2">
+<h2>Calculating <span class="math inline">\(\textrm{Var(}\hat{\beta} \textrm{)}\)</span> at each time point</h2>
+<p>Since the TP approach is a univariate gBLUP model calculating the variance of SNP effects is much simpler than the RR approach, and are given by</p>
+<p><span class="math display">\[\begin{align}
+\textrm{Var(} \hat{\boldsymbol{\beta}} \textrm{)}
+&amp;= \mathbf{W'_{sc} G^{-1} W_{sc}} \sigma_g^2 - \mathbf{W'_{sc} G^{-1} C^{22}} \mathbf{G^{-1} W_{sc} \sigma^2_e) }
+\label{eq:14}
+\end{align}\]</span></p>
+<p><span class="math inline">\(\mathbf{C^{22}}\)</span> is obtained by inverting the MME .</p>
+<div id="extracting-variance-components-from-asreml-output" class="section level3">
+<h3>Extracting variance components from asreml output</h3>
+<p>Recall, that the TP approach produces 20 individual files. The code chunks below parses those files, extracts the variance components, and stores them for later use.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash"><code class="sourceCode bash"><a class="sourceLine" id="cb9-1" data-line-number="1"><span class="bu">cd</span> TP_GP/</a>
+<a class="sourceLine" id="cb9-2" data-line-number="2"><span class="kw">for</span> <span class="fu">file</span> in *.asr<span class="kw">;</span> <span class="kw">do</span> <span class="fu">less</span> <span class="va">$file</span> <span class="kw">|</span> <span class="fu">grep</span> -A6 <span class="st">&quot;Model_Term&quot;</span> <span class="kw">|</span> <span class="fu">sed</span> -n -e 1,3p -e 5p <span class="kw">|</span> <span class="fu">tr</span> -s <span class="st">&quot; &quot;</span> <span class="op">&gt;</span> <span class="va">$file</span>.varcomp.txt<span class="kw">;</span> <span class="kw">done</span></a></code></pre></div>
+<p>Read in the parsed asr file and extract the variance components.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb10-1" data-line-number="1"><span class="kw">rm</span>(<span class="dt">list =</span> <span class="kw">ls</span>())</a>
+<a class="sourceLine" id="cb10-2" data-line-number="2"></a>
+<a class="sourceLine" id="cb10-3" data-line-number="3"><span class="kw">library</span>(reshape2)</a>
+<a class="sourceLine" id="cb10-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb10-5" data-line-number="5">FILES &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;DataAndCode/TP_GP/TPY&quot;</span>, <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>, <span class="st">&quot;.asr.varcomp.txt&quot;</span>)</a>
+<a class="sourceLine" id="cb10-6" data-line-number="6"><span class="cf">for</span>(i <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
+<a class="sourceLine" id="cb10-7" data-line-number="7">  tmp &lt;-<span class="st"> </span><span class="kw">read.table</span>(FILES[i], <span class="dt">skip =</span> <span class="dv">1</span>, <span class="dt">sep=</span><span class="st">&quot;&quot;</span>)</a>
+<a class="sourceLine" id="cb10-8" data-line-number="8">  tmp<span class="op">$</span>DOI &lt;-<span class="st"> </span>i</a>
+<a class="sourceLine" id="cb10-9" data-line-number="9">  <span class="cf">if</span>(i <span class="op">==</span><span class="st"> </span><span class="dv">1</span>){</a>
+<a class="sourceLine" id="cb10-10" data-line-number="10">    final &lt;-<span class="st"> </span>tmp</a>
+<a class="sourceLine" id="cb10-11" data-line-number="11">  }<span class="cf">else</span>{</a>
+<a class="sourceLine" id="cb10-12" data-line-number="12">    final &lt;-<span class="st"> </span><span class="kw">rbind</span>(final, tmp)</a>
+<a class="sourceLine" id="cb10-13" data-line-number="13">  }</a>
+<a class="sourceLine" id="cb10-14" data-line-number="14">}</a>
+<a class="sourceLine" id="cb10-15" data-line-number="15">final &lt;-<span class="st"> </span>final[<span class="kw">c</span>(<span class="st">&quot;V1&quot;</span>, <span class="st">&quot;V5&quot;</span>, <span class="st">&quot;DOI&quot;</span>)]</a>
+<a class="sourceLine" id="cb10-16" data-line-number="16"><span class="kw">colnames</span>(final)[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>] &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Source&quot;</span>, <span class="st">&quot;Sigma&quot;</span>)</a>
+<a class="sourceLine" id="cb10-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb10-18" data-line-number="18">Var.TP &lt;-<span class="st"> </span><span class="kw">dcast</span>(final, Source <span class="op">~</span><span class="st"> </span>DOI, <span class="dt">value.var =</span> <span class="st">&quot;Sigma&quot;</span>)</a>
+<a class="sourceLine" id="cb10-19" data-line-number="19">Var.TP &lt;-<span class="st"> </span>Var.TP[<span class="dv">2</span><span class="op">:</span><span class="dv">21</span>]</a>
+<a class="sourceLine" id="cb10-20" data-line-number="20"><span class="kw">row.names</span>(Var.TP) &lt;-<span class="st"> </span><span class="kw">c</span>(<span class="st">&quot;Exp&quot;</span>, <span class="st">&quot;G&quot;</span>, <span class="st">&quot;E&quot;</span>)</a>
+<a class="sourceLine" id="cb10-21" data-line-number="21"><span class="kw">print</span>(Var.TP)</a>
+<a class="sourceLine" id="cb10-22" data-line-number="22"></a>
+<a class="sourceLine" id="cb10-23" data-line-number="23"><span class="kw">write.csv</span>(Var.TP, <span class="st">&quot;DataandCode/CompCluster/TP/VarComps.csv&quot;</span>, <span class="dt">row.names=</span>T)</a></code></pre></div>
+</div>
+<div id="setting-up-mme-for-tp-approach-and-running-gwas-from-gebvs" class="section level3">
+<h3>Setting up MME for TP approach and running GWAS from GEBVs</h3>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb11-1" data-line-number="1"><span class="kw">library</span>(MASS)</a>
+<a class="sourceLine" id="cb11-2" data-line-number="2">G &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(<span class="kw">read.table</span>(<span class="st">&quot;DataAndCode/CompCluster/G.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">header =</span> T))</a>
+<a class="sourceLine" id="cb11-3" data-line-number="3">PSA.df &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">&quot;DataandCode/CompCluster/TP/PSA.cleaned.mn.csv&quot;</span>)</a>
+<a class="sourceLine" id="cb11-4" data-line-number="4">VarComps &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">&quot;DataandCode/CompCluster/TP/VarComps.csv&quot;</span>, <span class="dt">row.names =</span> <span class="dv">1</span>)</a>
+<a class="sourceLine" id="cb11-5" data-line-number="5">Eff.mat &lt;-<span class="st"> </span><span class="kw">as.matrix</span>(<span class="kw">read.csv</span>(<span class="st">&quot;DataandCode/CompCluster/TP/Eff.mat.csv&quot;</span>, <span class="dt">header =</span> T) )</a>
+<a class="sourceLine" id="cb11-6" data-line-number="6">Zsc &lt;-<span class="st"> </span><span class="kw">t</span>( <span class="kw">as.matrix</span> (<span class="kw">read.table</span>(<span class="st">&quot;DataandCode/CompCluster/Zsc.txt&quot;</span>, <span class="dt">header =</span> T, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>) ) )</a></code></pre></div>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb12-1" data-line-number="1"><span class="co">#Define all matrices to store the results</span></a>
+<a class="sourceLine" id="cb12-2" data-line-number="2">pvalue.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="dv">20</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc))</a>
+<a class="sourceLine" id="cb12-3" data-line-number="3">SD.mat &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="dv">20</span>, <span class="dt">nrow =</span> <span class="kw">ncol</span>(Zsc))</a>
+<a class="sourceLine" id="cb12-4" data-line-number="4"></a>
+<a class="sourceLine" id="cb12-5" data-line-number="5"><span class="cf">for</span>(day <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="dv">20</span>){</a>
+<a class="sourceLine" id="cb12-6" data-line-number="6">  tmp.PSA.df &lt;-<span class="st"> </span>PSA.df[<span class="kw">c</span>(<span class="st">&quot;NSFTV.ID&quot;</span>, <span class="st">&quot;Exp&quot;</span>, <span class="kw">paste0</span>(<span class="st">&quot;X&quot;</span>, day))]</a>
+<a class="sourceLine" id="cb12-7" data-line-number="7">  <span class="kw">colnames</span>(tmp.PSA.df)[<span class="dv">3</span>] &lt;-<span class="st"> &quot;Y&quot;</span></a>
+<a class="sourceLine" id="cb12-8" data-line-number="8">  </a>
+<a class="sourceLine" id="cb12-9" data-line-number="9">  <span class="co">###############################################</span></a>
+<a class="sourceLine" id="cb12-10" data-line-number="10">  <span class="co">#Set up incidence matrices for each time point#</span></a>
+<a class="sourceLine" id="cb12-11" data-line-number="11">  <span class="co">###############################################</span></a>
+<a class="sourceLine" id="cb12-12" data-line-number="12">  </a>
+<a class="sourceLine" id="cb12-13" data-line-number="13">  <span class="co">#Fixed effects X; n x 1</span></a>
+<a class="sourceLine" id="cb12-14" data-line-number="14">  X &lt;-<span class="st"> </span><span class="kw">model.matrix</span>(Y <span class="op">~</span><span class="st"> </span><span class="dv">1</span>, <span class="dt">data =</span> tmp.PSA.df); <span class="kw">dim</span>(X)</a>
+<a class="sourceLine" id="cb12-15" data-line-number="15">  <span class="co">#Random additive genetic Z; n x q</span></a>
+<a class="sourceLine" id="cb12-16" data-line-number="16">  Z &lt;-<span class="st"> </span><span class="kw">model.matrix</span>(Y <span class="op">~</span><span class="st"> </span><span class="dv">-1</span> <span class="op">+</span><span class="st"> </span>NSFTV.ID, <span class="dt">data =</span> tmp.PSA.df); <span class="kw">dim</span>(Z)</a>
+<a class="sourceLine" id="cb12-17" data-line-number="17">  <span class="co">#Random experiment Q; n x e</span></a>
+<a class="sourceLine" id="cb12-18" data-line-number="18">  Q &lt;-<span class="st"> </span><span class="kw">model.matrix</span>(Y <span class="op">~</span><span class="st"> </span><span class="dv">-1</span> <span class="op">+</span><span class="st"> </span>Exp, <span class="dt">data =</span> tmp.PSA.df); <span class="kw">dim</span>(Q)</a>
+<a class="sourceLine" id="cb12-19" data-line-number="19">  </a>
+<a class="sourceLine" id="cb12-20" data-line-number="20">  <span class="co">#########</span></a>
+<a class="sourceLine" id="cb12-21" data-line-number="21">  <span class="co">###R ####</span></a>
+<a class="sourceLine" id="cb12-22" data-line-number="22">  <span class="co">#########</span></a>
+<a class="sourceLine" id="cb12-23" data-line-number="23">  <span class="co">#R = I * \sigma^2_e</span></a>
+<a class="sourceLine" id="cb12-24" data-line-number="24">  Rinv &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">ncol =</span> <span class="kw">nrow</span>(X), <span class="dt">nrow =</span> <span class="kw">nrow</span>(X))</a>
+<a class="sourceLine" id="cb12-25" data-line-number="25">  <span class="kw">diag</span>(Rinv) &lt;-<span class="st"> </span>VarComps[<span class="dv">3</span>, day]</a>
+<a class="sourceLine" id="cb12-26" data-line-number="26">  Rinv &lt;-<span class="st"> </span><span class="kw">ginv</span>(Rinv)</a>
+<a class="sourceLine" id="cb12-27" data-line-number="27"></a>
+<a class="sourceLine" id="cb12-28" data-line-number="28">  <span class="co">############</span></a>
+<a class="sourceLine" id="cb12-29" data-line-number="29">  <span class="co">#Set up MME#</span></a>
+<a class="sourceLine" id="cb12-30" data-line-number="30">  <span class="co">############</span></a>
+<a class="sourceLine" id="cb12-31" data-line-number="31">  lambda.g &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>VarComps[<span class="dv">2</span>, day]</a>
+<a class="sourceLine" id="cb12-32" data-line-number="32">  lambda.q &lt;-<span class="st"> </span><span class="dv">1</span> <span class="op">/</span><span class="st"> </span>VarComps[<span class="dv">1</span>, day]</a>
+<a class="sourceLine" id="cb12-33" data-line-number="33">  </a>
+<a class="sourceLine" id="cb12-34" data-line-number="34">  C11 &lt;-<span class="st"> </span><span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>X; <span class="kw">dim</span>(C11) <span class="co">#1 x 1</span></a>
+<a class="sourceLine" id="cb12-35" data-line-number="35">  C12 &lt;-<span class="st"> </span><span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Z; <span class="kw">dim</span>(C12) <span class="co">#1 x 357</span></a>
+<a class="sourceLine" id="cb12-36" data-line-number="36">  C13 &lt;-<span class="st"> </span><span class="kw">t</span>(X) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Q; <span class="kw">dim</span>(C13) <span class="co">#1 x 3</span></a>
+<a class="sourceLine" id="cb12-37" data-line-number="37">  C21 &lt;-<span class="st"> </span><span class="kw">t</span>(Z) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>X; <span class="kw">dim</span>(C21) <span class="co">#357 x 1</span></a>
+<a class="sourceLine" id="cb12-38" data-line-number="38">  C22 &lt;-<span class="st"> </span>(<span class="kw">t</span>(Z) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Z) <span class="op">+</span><span class="st"> </span>(<span class="kw">ginv</span>(G) <span class="op">*</span><span class="st"> </span>lambda.g); <span class="kw">dim</span>(C22) <span class="co">#357 x 357</span></a>
+<a class="sourceLine" id="cb12-39" data-line-number="39">  C23 &lt;-<span class="st"> </span><span class="kw">t</span>(Z) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Q; <span class="kw">dim</span>(C23) <span class="co">#357 x 3</span></a>
+<a class="sourceLine" id="cb12-40" data-line-number="40">  C31 &lt;-<span class="st"> </span><span class="kw">t</span>(Q) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>X; <span class="kw">dim</span>(C31) <span class="co">#3 x 1</span></a>
+<a class="sourceLine" id="cb12-41" data-line-number="41">  C32 &lt;-<span class="st"> </span><span class="kw">t</span>(Q) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Z; <span class="kw">dim</span>(C32) <span class="co">#3 x 357</span></a>
+<a class="sourceLine" id="cb12-42" data-line-number="42"></a>
+<a class="sourceLine" id="cb12-43" data-line-number="43">  Idnt &lt;-<span class="st"> </span><span class="kw">matrix</span>(<span class="dv">0</span>, <span class="dt">nrow =</span> <span class="dv">3</span>, <span class="dt">ncol =</span> <span class="dv">3</span>)</a>
+<a class="sourceLine" id="cb12-44" data-line-number="44">  <span class="kw">diag</span>(Idnt) &lt;-<span class="st"> </span><span class="dv">1</span></a>
+<a class="sourceLine" id="cb12-45" data-line-number="45">  C33 &lt;-<span class="st"> </span>(<span class="kw">t</span>(Q) <span class="op">%*%</span><span class="st"> </span>Rinv <span class="op">%*%</span><span class="st"> </span>Q) <span class="op">+</span><span class="st"> </span>(Idnt <span class="op">*</span><span class="st"> </span>lambda.q); <span class="kw">dim</span>(C33) <span class="co">#3 x 3</span></a>
+<a class="sourceLine" id="cb12-46" data-line-number="46">  </a>
+<a class="sourceLine" id="cb12-47" data-line-number="47">  TopRow &lt;-<span class="st"> </span><span class="kw">cbind</span>(C11, C12, C13)</a>
+<a class="sourceLine" id="cb12-48" data-line-number="48">  MidRow &lt;-<span class="st"> </span><span class="kw">cbind</span>(C21, C22, C23)</a>
+<a class="sourceLine" id="cb12-49" data-line-number="49">  BotRow &lt;-<span class="st"> </span><span class="kw">cbind</span>(C31, C32, C33)</a>
+<a class="sourceLine" id="cb12-50" data-line-number="50"></a>
+<a class="sourceLine" id="cb12-51" data-line-number="51">  <span class="co">#Left hand side of MME  </span></a>
+<a class="sourceLine" id="cb12-52" data-line-number="52">  LHS &lt;-<span class="st"> </span><span class="kw">rbind</span>(TopRow, MidRow, BotRow) <span class="co">#361 x 361</span></a>
+<a class="sourceLine" id="cb12-53" data-line-number="53">  InvLHS &lt;-<span class="st"> </span><span class="kw">ginv</span>(LHS)</a>
+<a class="sourceLine" id="cb12-54" data-line-number="54">  <span class="co">#Extract only the additive genetic parts</span></a>
+<a class="sourceLine" id="cb12-55" data-line-number="55">  C22 &lt;-<span class="st"> </span>InvLHS[<span class="dv">2</span><span class="op">:</span><span class="dv">358</span>, <span class="dv">2</span><span class="op">:</span><span class="dv">358</span>]</a>
+<a class="sourceLine" id="cb12-56" data-line-number="56">  </a>
+<a class="sourceLine" id="cb12-57" data-line-number="57">  </a>
+<a class="sourceLine" id="cb12-58" data-line-number="58">  <span class="co">#######################################</span></a>
+<a class="sourceLine" id="cb12-59" data-line-number="59">  <span class="co">#Variance of predicted breeding values#</span></a>
+<a class="sourceLine" id="cb12-60" data-line-number="60">  <span class="co">#######################################</span></a>
+<a class="sourceLine" id="cb12-61" data-line-number="61">  VarU.hat &lt;-<span class="st"> </span>(G <span class="op">*</span><span class="st"> </span>VarComps[<span class="dv">2</span>, day]) <span class="op">-</span><span class="st"> </span>C22</a>
+<a class="sourceLine" id="cb12-62" data-line-number="62">  </a>
+<a class="sourceLine" id="cb12-63" data-line-number="63">  <span class="co">#########################</span></a>
+<a class="sourceLine" id="cb12-64" data-line-number="64">  <span class="co">#Variance of SNP effects#</span></a>
+<a class="sourceLine" id="cb12-65" data-line-number="65">  <span class="co">#########################</span></a>
+<a class="sourceLine" id="cb12-66" data-line-number="66">  VarBeta.hat &lt;-<span class="st"> </span><span class="kw">diag</span>(<span class="kw">t</span>(Zsc) <span class="op">%*%</span><span class="st"> </span><span class="kw">ginv</span>(G) <span class="op">%*%</span><span class="st"> </span>VarU.hat <span class="op">%*%</span><span class="st"> </span><span class="kw">ginv</span>(G) <span class="op">%*%</span><span class="st"> </span>Zsc)</a>
+<a class="sourceLine" id="cb12-67" data-line-number="67">  </a>
+<a class="sourceLine" id="cb12-68" data-line-number="68">  <span class="co">#summary(diag(VarBeta.hat))</span></a>
+<a class="sourceLine" id="cb12-69" data-line-number="69">  </a>
+<a class="sourceLine" id="cb12-70" data-line-number="70">  sd.SNPs &lt;-<span class="st"> </span><span class="kw">sqrt</span>(VarBeta.hat)</a>
+<a class="sourceLine" id="cb12-71" data-line-number="71">  </a>
+<a class="sourceLine" id="cb12-72" data-line-number="72">  SNPe_ad &lt;-<span class="st"> </span>Eff.mat[,day] <span class="op">/</span><span class="st"> </span>sd.SNPs</a>
+<a class="sourceLine" id="cb12-73" data-line-number="73">  </a>
+<a class="sourceLine" id="cb12-74" data-line-number="74">  pvalue.mat[,day] &lt;-<span class="st"> </span><span class="dv">2</span><span class="op">*</span>(<span class="dv">1</span><span class="op">-</span><span class="kw">pnorm</span>(<span class="kw">abs</span>(SNPe_ad)))</a>
+<a class="sourceLine" id="cb12-75" data-line-number="75">  SD.mat[,day] &lt;-<span class="st"> </span>sd.SNPs</a>
+<a class="sourceLine" id="cb12-76" data-line-number="76">  </a>
+<a class="sourceLine" id="cb12-77" data-line-number="77">  <span class="kw">print</span>(day)</a>
+<a class="sourceLine" id="cb12-78" data-line-number="78">}</a>
+<a class="sourceLine" id="cb12-79" data-line-number="79"></a>
+<a class="sourceLine" id="cb12-80" data-line-number="80"><span class="kw">write.table</span>(pvalue.mat, <span class="st">&quot;pval.mat.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">row.names =</span> T, <span class="dt">col.names =</span> T)</a>
+<a class="sourceLine" id="cb12-81" data-line-number="81"><span class="kw">write.table</span>(SD.mat, <span class="st">&quot;SDmat.mat.txt&quot;</span>, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>, <span class="dt">row.names =</span> T, <span class="dt">col.names =</span> T)</a></code></pre></div>
+</div>
+</div>
+</div>
 </div>
 
 
     </div>
     <div class="col-md-2">
-      <div id="toc">
+            <div id="toc">
       	<button type="button" class="close">×</button>
         <ul>
-        <li><a href="#background">Background</a></li>
-        <li><a href="#estimating-variance-components-for-the-tp-approach.">Estimating variance components for the TP approach.</a></li>
-        <li><a href="#estimating-variance-components-for-the-rr-approach.">Estimating variance components for the RR approach.</a></li>
-        <li><a href="#calculating-p-values">Calculating <span class="math inline">\(p\)</span>-values</a><ul>
-        <li><a href="#variance-of-snp-effects">Variance of SNP effects</a></li>
-        <li><a href="#obtaining-p-values-for-marker-effects">Obtaining <span class="math inline">\(p\)</span>-values for marker effects</a></li>
-        <li><a href="#code-for-p-values-for-tp">Code for <span class="math inline">\(p\)</span>-values for TP</a></li>
-        <li><a href="#code-for-p-values-for-rr">Code for <span class="math inline">\(p\)</span>-values for RR</a></li>
+        <li><a href="#random-regression">Random Regression</a><ul>
+        <li><a href="#defining-the-mixed-model-equation">Defining the mixed model equation</a></li>
+        <li><a href="#setting-up-covariable-matrices-for-the-rr-approach">Setting up covariable matrices for the RR approach</a></li>
+        <li><a href="#calculating-textrmvarhatbeta-textrm-at-each-time-point">Calculating <span class="math inline">\(\textrm{Var(}\hat{\beta} \textrm{)}\)</span> at each time point</a></li>
+        </ul></li>
+        <li><a href="#single-time-point-approach">Single time point approach</a><ul>
+        <li><a href="#defining-the-mixed-model-equation-1">Defining the mixed model equation</a></li>
+        <li><a href="#calculating-textrmvarhatbeta-textrm-at-each-time-point-1">Calculating <span class="math inline">\(\textrm{Var(}\hat{\beta} \textrm{)}\)</span> at each time point</a></li>
         </ul></li>
         </ul>
       </div>
-    </div>
+          </div>
   </div>
 </div>
 
@@ -1164,6 +1283,7 @@ $(document).ready(function () {
   $('#content').magnificPopup({
 	      type:'image',
 	      closeOnContentClick: false,
+	      closeBtnInside: false,
 	      delegate: 'img',
 	      gallery: {enabled: true },
 	      image: {

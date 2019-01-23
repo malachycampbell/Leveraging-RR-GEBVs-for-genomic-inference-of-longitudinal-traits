@@ -21,7 +21,7 @@ Here, we'll classify QTLs into persistent QTL (QTL detected at all 20 time point
 
 # QTL identification using bedtools
 To runbedtools we need to generate a .BED file for the signifcant SNPs.
-```{r make bed files, echo = T, eval=TRUE}
+```{r make bed files, echo = T, eval = F}
 library(reshape2)
 
 TP.p <- as.matrix( read.table("DataAndCode/CompCluster/TP/pval.mat.txt", sep = "\t", header = T, row.names = 1) )
@@ -70,7 +70,7 @@ write.table(RR.p[c("V1", "V4", "V5", "Var1")],
             sep = "\t", col.names = F, row.names = F, quote = F)
 ```
 
-```{bash find QTLs, eval = F}
+```{bash find QTLs, echo = T, eval = F}
 cd DataAndCode/TP_GP/bedtools/
 bedtools merge -i TP.p.BED -d 200000 -nms > TP.p.QTL.txt
 bedtools merge -i TP.pSNPs.BED -d 200000 -nms > TP.p.QTLSNPs.txt
@@ -84,7 +84,7 @@ less RR.p.QTL.txt | wc -l #26
 ```
 This produces a file that lists the QTLs and has the days in which each SNP was detected in a string delimited by semicolons. This next chunk of code will take the fourth column with the string of days, split the string, and only keep non redundant entries.
 
-```{r split column}
+```{r split column, echo = T, eval = F}
 RR.QTLs <- read.table("DataAndCode/RR_GP/bedtools/RR.p.QTL.txt",
                       header = F, sep = "\t")
 
@@ -105,7 +105,7 @@ dim(RR.QTLs[(RR.QTLs$NoDays < 6) ,]) #2 short-duration QTL (< 6 days)
 
 Now I'll figure out which SNPs are most significant for each QTL. First find out which significant SNPs are in the QTL intervals with bedtools.
 
-```{r find sig SNPs in QTLs}
+```{r find sig SNPs in QTLs, echo = T, eval = F}
 library(plyr)
 RR.QTLs <- read.table("DataAndCode/RR_GP/bedtools/RR.p.QTL.txt", header = F, sep = "\t")
 
@@ -217,7 +217,7 @@ RR.mat.S <- RR.mat[order(RR.mat$min) ,]
 ```
 
 ## Plot frequencies for each class
-```{r plot frequencies for each class}
+```{r plot frequencies for each class, echo = T, eval = F}
 pdf("DataAndCode/Figures/QTL.freq.pdf", h = 1.9, w=3.2, useDingbats = F, pointsize = 10)
 par(xpd = T, mar=c(3,3,.1,.75)+ c(0,0,0,4), mgp=c(1.8,0.5,0))
 
@@ -230,7 +230,7 @@ dev.off()
 ```
 
 ## Heatmap
-```{r heatmap for QTL}
+```{r heatmap for QTL, echo = T, eval = F}
 P.mat.per <- round(-log(RR.mat.per[4:23], 10), 2)
 P.mat.ML <- round(-log(RR.mat.ML[4:23], 10), 2)
 P.mat.MS <- round(-log(RR.mat.MS[4:23], 10), 2)

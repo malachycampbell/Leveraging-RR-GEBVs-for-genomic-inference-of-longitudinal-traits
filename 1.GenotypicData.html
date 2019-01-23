@@ -564,11 +564,6 @@ text-align: center;
 font-style: italic;
 font-size: 90%;
 }
-img.mfp-img {
-background-color: #FFFFFF;
-padding: 0px;
-margin: 40px auto;
-}
 .mfp-figure {
 min-width: 250px;
 }
@@ -830,19 +825,19 @@ img {
 </div>
 
 <div id="content">
-<section id="background" class="level1">
+<div id="background" class="section level1">
 <h1>Background</h1>
 <p>Here we will prep the genotypic data used for all analyses. The 44K SNP data <a href="https://www.nature.com/articles/ncomms1467">Zhao et al (2011)</a> was obtained from <a href="http://ricediversity.org/data/sets/44kgwas/RiceDiversity.44K.MSU6.Genotypes_PLINK.zip">ricediversity.org</a>.</p>
-</section>
-<section id="impute-missing-data" class="level1">
+</div>
+<div id="impute-missing-data" class="section level1">
 <h1>Impute missing data</h1>
-<p>This code loads to the 44k SNP data, and imputes the missing markers. The missing markers were replaced with the mean values.</p>
+<p>This code loads to the 44k SNP data, and imputes the missing markers. The missing markers were replaced with the mode of SNP values.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb1-1" data-line-number="1"><span class="kw">library</span>(BGLR)</a>
 <a class="sourceLine" id="cb1-2" data-line-number="2"></a>
-<a class="sourceLine" id="cb1-3" data-line-number="3">FAM &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/RiceDiversity_44K_Genotypes_PLINK/sativas413.fam&quot;</span>)[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a>
-<a class="sourceLine" id="cb1-4" data-line-number="4">MAP &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/RiceDiversity_44K_Genotypes_PLINK/sativas413.map&quot;</span>)</a>
+<a class="sourceLine" id="cb1-3" data-line-number="3">FAM &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;DataandCode/RiceDiversity_44K_Genotypes_PLINK/sativas413.fam&quot;</span>)[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]</a>
+<a class="sourceLine" id="cb1-4" data-line-number="4">MAP &lt;-<span class="st"> </span><span class="kw">read.table</span>(<span class="st">&quot;DataandCode/RiceDiversity_44K_Genotypes_PLINK/sativas413.map&quot;</span>)</a>
 <a class="sourceLine" id="cb1-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb1-6" data-line-number="6">PED &lt;-<span class="st"> </span><span class="kw">read_ped</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/RiceDiversity_44K_Genotypes_PLINK/sativas413.ped&quot;</span>)</a>
+<a class="sourceLine" id="cb1-6" data-line-number="6">PED &lt;-<span class="st"> </span><span class="kw">read_ped</span>(<span class="st">&quot;DataandCode/RiceDiversity_44K_Genotypes_PLINK/sativas413.ped&quot;</span>)</a>
 <a class="sourceLine" id="cb1-7" data-line-number="7">m &lt;-<span class="st"> </span>PED<span class="op">$</span>p</a>
 <a class="sourceLine" id="cb1-8" data-line-number="8">n &lt;-<span class="st"> </span>PED<span class="op">$</span>n</a>
 <a class="sourceLine" id="cb1-9" data-line-number="9">PED &lt;-<span class="st"> </span>PED<span class="op">$</span>x</a>
@@ -859,61 +854,63 @@ img {
 <a class="sourceLine" id="cb1-20" data-line-number="20"><span class="kw">rownames</span>(W) &lt;-<span class="st"> </span><span class="kw">paste0</span>(<span class="st">&quot;NSFTV_&quot;</span>, FAM<span class="op">$</span>V2)</a>
 <a class="sourceLine" id="cb1-21" data-line-number="21"></a>
 <a class="sourceLine" id="cb1-22" data-line-number="22"><span class="co">#Imputation</span></a>
-<a class="sourceLine" id="cb1-23" data-line-number="23"><span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">ncol</span>(W)) {</a>
-<a class="sourceLine" id="cb1-24" data-line-number="24">  W[, j] =<span class="st"> </span><span class="kw">ifelse</span>(<span class="kw">is.na</span>(W[, j]), <span class="kw">mean</span>(W[, j], <span class="dt">na.rm =</span> <span class="ot">TRUE</span>), W[, j])</a>
-<a class="sourceLine" id="cb1-25" data-line-number="25">}</a></code></pre></div>
-</section>
-<section id="remove-markers-with-low-maf" class="level1">
+<a class="sourceLine" id="cb1-23" data-line-number="23">getmode &lt;-<span class="st"> </span><span class="cf">function</span>(v) {</a>
+<a class="sourceLine" id="cb1-24" data-line-number="24">  uniqv &lt;-<span class="st"> </span><span class="kw">unique</span>(v)</a>
+<a class="sourceLine" id="cb1-25" data-line-number="25">  uniqv[<span class="kw">which.max</span>(<span class="kw">tabulate</span>(<span class="kw">match</span>(v, uniqv)))]</a>
+<a class="sourceLine" id="cb1-26" data-line-number="26">}</a>
+<a class="sourceLine" id="cb1-27" data-line-number="27"></a>
+<a class="sourceLine" id="cb1-28" data-line-number="28"><span class="cf">for</span> (j <span class="cf">in</span> <span class="dv">1</span><span class="op">:</span><span class="kw">ncol</span>(W)) {</a>
+<a class="sourceLine" id="cb1-29" data-line-number="29">  W[, j] =<span class="st"> </span><span class="kw">ifelse</span>(<span class="kw">is.na</span>(W[, j]), <span class="kw">getmode</span>(W[, j]), W[, j])</a>
+<a class="sourceLine" id="cb1-30" data-line-number="30">}</a></code></pre></div>
+</div>
+<div id="remove-markers-with-low-maf" class="section level1">
 <h1>Remove markers with low MAF</h1>
 <p>Markers with a MAF less than 0.05 were removed. This removed 3,211 markers, leaving a total of 33,690 markers for computing the genomic relationship matrix (GRM).</p>
 <div class="sourceCode" id="cb2"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb2-1" data-line-number="1"><span class="co">#load phenotypic data for 378 accessions</span></a>
-<a class="sourceLine" id="cb2-2" data-line-number="2">PSA.df &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/Phenotypes/PSA.cleaned.csv&quot;</span>)</a>
+<a class="sourceLine" id="cb2-2" data-line-number="2">PSA.df &lt;-<span class="st"> </span><span class="kw">read.csv</span>(<span class="st">&quot;DataandCode/Phenotypes/PSA.cleaned.mn.csv&quot;</span>)</a>
 <a class="sourceLine" id="cb2-3" data-line-number="3"></a>
-<a class="sourceLine" id="cb2-4" data-line-number="4">W.orig &lt;-<span class="st"> </span>W</a>
-<a class="sourceLine" id="cb2-5" data-line-number="5"></a>
-<a class="sourceLine" id="cb2-6" data-line-number="6">W &lt;-<span class="st"> </span>W.orig[<span class="kw">row.names</span>(W.orig) <span class="op">%in%</span><span class="st"> </span>PSA.df<span class="op">$</span>NSFTV.ID ,]</a>
+<a class="sourceLine" id="cb2-4" data-line-number="4">W &lt;-<span class="st"> </span>W[<span class="kw">row.names</span>(W) <span class="op">%in%</span><span class="st"> </span>PSA.df<span class="op">$</span>NSFTV.ID ,]</a>
+<a class="sourceLine" id="cb2-5" data-line-number="5">W &lt;-<span class="st"> </span>W[<span class="kw">order</span>(<span class="kw">row.names</span>(W)) ,]</a>
+<a class="sourceLine" id="cb2-6" data-line-number="6"></a>
 <a class="sourceLine" id="cb2-7" data-line-number="7">freq &lt;-<span class="st"> </span><span class="kw">colMeans</span>(W) <span class="op">/</span><span class="st"> </span><span class="dv">2</span></a>
 <a class="sourceLine" id="cb2-8" data-line-number="8">maf &lt;-<span class="st"> </span><span class="kw">ifelse</span>(freq <span class="op">&gt;</span><span class="st"> </span><span class="fl">0.5</span>, <span class="dv">1</span><span class="op">-</span>freq, freq)</a>
 <a class="sourceLine" id="cb2-9" data-line-number="9">maf.index &lt;-<span class="st"> </span><span class="kw">which</span>(maf <span class="op">&lt;</span><span class="st"> </span><span class="fl">0.05</span>)</a>
-<a class="sourceLine" id="cb2-10" data-line-number="10"><span class="kw">length</span>(maf.index)</a></code></pre></div>
-<pre><code>## [1] 3211</code></pre>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb4-1" data-line-number="1">W &lt;-<span class="st"> </span>W[, <span class="op">-</span>maf.index]</a></code></pre></div>
-</section>
-<section id="compute-grm-using-vanradens-method" class="level1">
+<a class="sourceLine" id="cb2-10" data-line-number="10"><span class="kw">length</span>(maf.index)</a>
+<a class="sourceLine" id="cb2-11" data-line-number="11">W &lt;-<span class="st"> </span>W[, <span class="op">-</span>maf.index]</a>
+<a class="sourceLine" id="cb2-12" data-line-number="12"></a>
+<a class="sourceLine" id="cb2-13" data-line-number="13">MAP &lt;-<span class="st"> </span>MAP[<span class="op">-</span>maf.index ,]</a>
+<a class="sourceLine" id="cb2-14" data-line-number="14"></a>
+<a class="sourceLine" id="cb2-15" data-line-number="15"><span class="kw">write.table</span>(MAP, <span class="st">&quot;DataandCode/CompCluster/MAP_maf0.05.txt&quot;</span>, <span class="dt">row.names =</span> F, <span class="dt">col.names =</span> F, <span class="dt">quote =</span> F, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a></code></pre></div>
+</div>
+<div id="compute-grm-using-vanradens-method" class="section level1">
 <h1>Compute GRM using VanRaden’s method</h1>
-<p>A genomic relationship matrix (<span class="math inline">\(\mathbf{G}\)</span>) was calculated using <a href="https://www.ncbi.nlm.nih.gov/pubmed/18946147">VanRaden (2008)</a>. <span class="math display">\[\mathbf{G} = \frac{\mathbf{W_{cs} W_{cs}}' }{m}\]</span> Here, <span class="math inline">\(\mathbf{W_{cs}}\)</span> is a centered and scaled <span class="math inline">\(n \times m\)</span> matrix, where <span class="math inline">\(m\)</span> is 33,674 SNPs and <span class="math inline">\(n\)</span> is the 357 genotyped rice lines.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb5-1" data-line-number="1"><span class="co">##NOTE that in the standalone of asreml the inverse of G is</span></a>
-<a class="sourceLine" id="cb5-2" data-line-number="2"><span class="co">##done after loading. So DO NOT take the inverse of G here!!!</span></a>
-<a class="sourceLine" id="cb5-3" data-line-number="3">Zsc &lt;-<span class="st"> </span><span class="kw">scale</span>(<span class="dt">x=</span>W,<span class="dt">center=</span>T,<span class="dt">scale=</span>T)</a>
-<a class="sourceLine" id="cb5-4" data-line-number="4">G &lt;-<span class="st"> </span><span class="kw">tcrossprod</span>(Zsc)<span class="op">/</span><span class="kw">ncol</span>(W)</a>
-<a class="sourceLine" id="cb5-5" data-line-number="5">G &lt;-<span class="st"> </span>G <span class="op">+</span><span class="st"> </span><span class="kw">diag</span>(<span class="kw">nrow</span>(W))<span class="op">*</span><span class="fl">0.001</span></a>
-<a class="sourceLine" id="cb5-6" data-line-number="6">G &lt;-<span class="st"> </span>G[<span class="kw">match</span>(<span class="kw">unique</span>(PSA.df<span class="op">$</span>NSFTV.ID), <span class="kw">row.names</span>(G) ) ,]</a>
-<a class="sourceLine" id="cb5-7" data-line-number="7">G &lt;-<span class="st"> </span>G[, <span class="kw">match</span>(<span class="kw">unique</span>(PSA.df<span class="op">$</span>NSFTV.ID), <span class="kw">colnames</span>(G) )]</a>
-<a class="sourceLine" id="cb5-8" data-line-number="8"></a>
-<a class="sourceLine" id="cb5-9" data-line-number="9"><span class="co">#Save the G matrix, marker positions, and marker matrix to estimate marker variances and make manhattan plots</span></a>
-<a class="sourceLine" id="cb5-10" data-line-number="10">MAP &lt;-<span class="st"> </span>MAP[MAP<span class="op">$</span>V2 <span class="op">%in%</span><span class="st"> </span><span class="kw">colnames</span>(W) ,]</a>
-<a class="sourceLine" id="cb5-11" data-line-number="11"></a>
-<a class="sourceLine" id="cb5-12" data-line-number="12"><span class="kw">write.table</span>(MAP, <span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/MAP_maf0.05.txt&quot;</span>, <span class="dt">row.names =</span> F, <span class="dt">col.names =</span> F, <span class="dt">quote =</span> F, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a>
-<a class="sourceLine" id="cb5-13" data-line-number="13"><span class="kw">write.table</span>(<span class="kw">t</span>(Zsc), <span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/Zsc.txt&quot;</span>, <span class="dt">row.names =</span> F, <span class="dt">col.names =</span> T, <span class="dt">quote =</span> F, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a>
-<a class="sourceLine" id="cb5-14" data-line-number="14"><span class="kw">write.table</span>(G, <span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/CompCluster/G.mat.txt&quot;</span>, <span class="dt">row.names =</span> F, <span class="dt">col.names =</span> T, <span class="dt">quote =</span> F, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a>
-<a class="sourceLine" id="cb5-15" data-line-number="15"></a>
-<a class="sourceLine" id="cb5-16" data-line-number="16">G.final &lt;-<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">which</span>(<span class="kw">row</span>(G) <span class="op">&gt;=</span><span class="st"> </span><span class="kw">col</span>(G),<span class="dt">arr.ind=</span><span class="ot">TRUE</span>))</a>
-<a class="sourceLine" id="cb5-17" data-line-number="17">G.final<span class="op">$</span>G &lt;-<span class="st"> </span>G[<span class="kw">lower.tri</span>(G, <span class="dt">diag=</span>T)]</a>
-<a class="sourceLine" id="cb5-18" data-line-number="18">G.final &lt;-<span class="st"> </span>G.final[,<span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">3</span>)]</a>
-<a class="sourceLine" id="cb5-19" data-line-number="19">G.final &lt;-<span class="st"> </span>G.final[<span class="kw">order</span>(G.final[,<span class="dv">2</span>], G.final[,<span class="dv">1</span>]),]</a>
-<a class="sourceLine" id="cb5-20" data-line-number="20">G.final &lt;-<span class="st"> </span>G.final[,<span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">3</span>)]</a>
-<a class="sourceLine" id="cb5-21" data-line-number="21"><span class="kw">colnames</span>(G.final)[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]=<span class="kw">c</span>(<span class="st">&quot;Row&quot;</span>, <span class="st">&quot;Column&quot;</span>)</a>
-<a class="sourceLine" id="cb5-22" data-line-number="22"><span class="kw">attr</span>(G.final, <span class="st">&quot;rowNames&quot;</span>) &lt;-<span class="st"> </span><span class="kw">row.names</span>(G)</a>
-<a class="sourceLine" id="cb5-23" data-line-number="23"></a>
-<a class="sourceLine" id="cb5-24" data-line-number="24"><span class="kw">write.table</span>(G.final, <span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/RR_GP/G2.grm&quot;</span>, <span class="dt">col.names=</span>F, <span class="dt">row.names=</span>F, <span class="dt">quote=</span>F, <span class="dt">sep=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a>
-<a class="sourceLine" id="cb5-25" data-line-number="25"><span class="kw">write.table</span>(G.final, <span class="st">&quot;/Users/malachycampbell/Desktop/RRgwas_git/TP_GP/G2.grm&quot;</span>, <span class="dt">col.names=</span>F, <span class="dt">row.names=</span>F, <span class="dt">quote=</span>F, <span class="dt">sep=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a></code></pre></div>
-</section>
+<p>A genomic relationship matrix (<span class="math inline">\(\mathbf{G}\)</span>) was calculated using <a href="https://www.ncbi.nlm.nih.gov/pubmed/18946147">VanRaden (2008)</a>. <span class="math display">\[\mathbf{G} = \frac{\mathbf{Z_{sc} Z_{sc}}' }{m}\]</span> Here, <span class="math inline">\(\mathbf{Z_{c}}\)</span> is a centered <span class="math inline">\(n \times m\)</span> matrix, where <span class="math inline">\(m\)</span> is 33,564 SNPs and <span class="math inline">\(n\)</span> is the 357 genotyped rice lines.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><a class="sourceLine" id="cb3-1" data-line-number="1">Zsc &lt;-<span class="st"> </span><span class="kw">scale</span>(<span class="dt">x=</span>W,<span class="dt">center=</span>T,<span class="dt">scale=</span>T)</a>
+<a class="sourceLine" id="cb3-2" data-line-number="2">G &lt;-<span class="st"> </span><span class="kw">tcrossprod</span>(Zsc)<span class="op">/</span><span class="kw">ncol</span>(W)</a>
+<a class="sourceLine" id="cb3-3" data-line-number="3">G &lt;-<span class="st"> </span>G <span class="op">+</span><span class="st"> </span><span class="kw">diag</span>(<span class="kw">nrow</span>(W))<span class="op">*</span><span class="fl">0.001</span></a>
+<a class="sourceLine" id="cb3-4" data-line-number="4">G &lt;-<span class="st"> </span>G[<span class="kw">match</span>(<span class="kw">unique</span>(PSA.df<span class="op">$</span>NSFTV.ID), <span class="kw">row.names</span>(G) ) ,]</a>
+<a class="sourceLine" id="cb3-5" data-line-number="5">G &lt;-<span class="st"> </span>G[, <span class="kw">match</span>(<span class="kw">unique</span>(PSA.df<span class="op">$</span>NSFTV.ID), <span class="kw">colnames</span>(G) )]</a>
+<a class="sourceLine" id="cb3-6" data-line-number="6"></a>
+<a class="sourceLine" id="cb3-7" data-line-number="7"><span class="kw">write.table</span>(<span class="kw">t</span>(Zsc), <span class="st">&quot;DataandCode/CompCluster/Zsc.txt&quot;</span>, <span class="dt">row.names =</span> F, <span class="dt">col.names =</span> T, <span class="dt">quote =</span> F, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a>
+<a class="sourceLine" id="cb3-8" data-line-number="8"><span class="kw">write.table</span>(G, <span class="st">&quot;DataandCode/CompCluster/G.txt&quot;</span>, <span class="dt">row.names =</span> F, <span class="dt">col.names =</span> T, <span class="dt">quote =</span> F, <span class="dt">sep =</span> <span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a>
+<a class="sourceLine" id="cb3-9" data-line-number="9"></a>
+<a class="sourceLine" id="cb3-10" data-line-number="10">G.final &lt;-<span class="st"> </span><span class="kw">as.data.frame</span>(<span class="kw">which</span>(<span class="kw">row</span>(G) <span class="op">&gt;=</span><span class="st"> </span><span class="kw">col</span>(G),<span class="dt">arr.ind=</span><span class="ot">TRUE</span>))</a>
+<a class="sourceLine" id="cb3-11" data-line-number="11">G.final<span class="op">$</span>G &lt;-<span class="st"> </span>G[<span class="kw">lower.tri</span>(G, <span class="dt">diag=</span>T)]</a>
+<a class="sourceLine" id="cb3-12" data-line-number="12">G.final &lt;-<span class="st"> </span>G.final[,<span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">3</span>)]</a>
+<a class="sourceLine" id="cb3-13" data-line-number="13">G.final &lt;-<span class="st"> </span>G.final[<span class="kw">order</span>(G.final[,<span class="dv">2</span>], G.final[,<span class="dv">1</span>]),]</a>
+<a class="sourceLine" id="cb3-14" data-line-number="14">G.final &lt;-<span class="st"> </span>G.final[,<span class="kw">c</span>(<span class="dv">2</span>,<span class="dv">1</span>,<span class="dv">3</span>)]</a>
+<a class="sourceLine" id="cb3-15" data-line-number="15"><span class="kw">colnames</span>(G.final)[<span class="dv">1</span><span class="op">:</span><span class="dv">2</span>]=<span class="kw">c</span>(<span class="st">&quot;Row&quot;</span>, <span class="st">&quot;Column&quot;</span>)</a>
+<a class="sourceLine" id="cb3-16" data-line-number="16"><span class="kw">attr</span>(G.final, <span class="st">&quot;rowNames&quot;</span>) &lt;-<span class="st"> </span><span class="kw">row.names</span>(G)</a>
+<a class="sourceLine" id="cb3-17" data-line-number="17"></a>
+<a class="sourceLine" id="cb3-18" data-line-number="18"><span class="kw">write.table</span>(G.final, <span class="st">&quot;DataandCode/CompCluster/RR/G2.grm&quot;</span>, <span class="dt">col.names=</span>F, <span class="dt">row.names=</span>F, <span class="dt">quote=</span>F, <span class="dt">sep=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a>
+<a class="sourceLine" id="cb3-19" data-line-number="19"><span class="kw">write.table</span>(G.final, <span class="st">&quot;DataandCode/CompCluster/TP/G2.grm&quot;</span>, <span class="dt">col.names=</span>F, <span class="dt">row.names=</span>F, <span class="dt">quote=</span>F, <span class="dt">sep=</span><span class="st">&quot;</span><span class="ch">\t</span><span class="st">&quot;</span>)</a></code></pre></div>
+</div>
 </div>
 
 
     </div>
     <div class="col-md-2">
-      <div id="toc">
+            <div id="toc">
       	<button type="button" class="close">×</button>
         <ul>
         <li><a href="#background">Background</a></li>
@@ -922,7 +919,7 @@ img {
         <li><a href="#compute-grm-using-vanradens-method">Compute GRM using VanRaden’s method</a></li>
         </ul>
       </div>
-    </div>
+          </div>
   </div>
 </div>
 
@@ -944,6 +941,7 @@ $(document).ready(function () {
   $('#content').magnificPopup({
 	      type:'image',
 	      closeOnContentClick: false,
+	      closeBtnInside: false,
 	      delegate: 'img',
 	      gallery: {enabled: true },
 	      image: {

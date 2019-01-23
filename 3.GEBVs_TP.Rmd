@@ -57,7 +57,7 @@ $1 ~ mu !r Exp grm(NID)
 ```
 
 Here is how it was run.
-```{bash run asreml}
+```{bash run asreml, echo = T, eval = F}
 cd TP_GP
 
 asreml TP.as
