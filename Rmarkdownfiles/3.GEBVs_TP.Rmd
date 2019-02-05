@@ -1,0 +1,64 @@
+---
+title: "Predicting GEBVs with single time point gBLUP models"
+author: "Malachy Campbell"
+date: "8/7/2018"
+output:
+  rmdformats::html_clean:
+    fig_width: 6
+    fig_height: 6
+    highlight: kate
+    thumbnails: true
+    lightbox: true
+    gallery: true
+---
+
+```{r setup, include=FALSE, echo = F}
+knitr::opts_knit$set(root.dir = '~/Documents/Dropbox/Work/Manuscripts/2018_RandomRegressionGWAS/ThePlantGenome/Revision/New Analysis/')
+```
+
+# Background
+The purpose of this script is to predict genomic breeding values (GEBVs) using a conventional single time point (TP) gBLUP model. The TP model is 
+$$\mathbf{y} = \mathbf{Xb} + \mathbf{Zu} + \mathbf{Qs} +  \mathbf{e}$$
+where $\mathbf{y}$ is PSA at each of the 20 days; $\mathbf{Z}$ and $\mathbf{Q}$ are incidence matrices corresponding to the random additive genetic effect ($\mathbf{u}$), and random experimental effect ($\mathbf{s}$), respectively; and $\mathbf{e}$ is the random residual error.
+Here  we assume the random terms are as follows $\mathbf{u} \sim N(0, \mathbf{G}\sigma_g^2)$, $\mathbf{s} \sim N(0, \mathbf{I}\sigma_s^2)$, and $\mathbf{e} \sim N(0, \mathbf{I}\sigma_e^2)$. A genomic relationship matrix ($\mathbf{G}$) was calculated as described for the RR approach.
+
+# Fitting the TP model.
+Here is the .as file for ASREML.
+```{asreml .as file, execute = F, echo = T}
+!RENAME !ARG Y1 Y2 Y3 Y4 Y5 Y6 Y7 Y8 Y9 Y10 Y11 Y12 Y13 Y14 Y15 Y16 Y17 Y18 Y19 Y20
+SINGLE TP
+ NID !A
+ Exp !A
+ Y1 !/100000
+ Y2 !/100000
+ Y3 !/100000
+ Y4 !/100000
+ Y5 !/100000
+ Y6 !/100000
+ Y7 !/100000
+ Y8 !/100000
+ Y9 !/100000
+ Y10 !/100000
+ Y11 !/100000
+ Y12 !/100000
+ Y13 !/100000
+ Y14 !/100000
+ Y15 !/100000
+ Y16 !/100000
+ Y17 !/100000
+ Y18 !/100000
+ Y19 !/100000
+ Y20 !/100000
+G2.grm
+PSA.cleaned.mn.csv !SKIP 1 !MAXITER 1000 !EXTRA 100 !WORKSPACE 6144 !SIGMAPAR !DOPART 1
+
+!PATH 1
+$1 ~ mu !r Exp grm(NID)
+```
+
+Here is how it was run.
+```{bash run asreml, echo = T, eval = F}
+cd TP_GP
+
+asreml TP.as
+```

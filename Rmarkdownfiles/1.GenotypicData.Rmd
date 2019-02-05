@@ -1,0 +1,102 @@
+---
+title: "Genotypic data"
+author: "Malachy Campbell"
+date: "8/7/2018"
+output:
+  rmdformats::html_clean:
+    fig_width: 6
+    fig_height: 6
+    highlight: kate
+    thumbnails: true
+    lightbox: true
+    gallery: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_knit$set(root.dir = '~/Documents/Dropbox/Work/Manuscripts/2018_RandomRegressionGWAS/ThePlantGenome/Revision/New Analysis/')
+```
+
+# Background
+Here we will prep the genotypic data used for all analyses. The 44K SNP data [Zhao et al (2011)](https://www.nature.com/articles/ncomms1467) was obtained from [ricediversity.org](http://ricediversity.org/data/sets/44kgwas/RiceDiversity.44K.MSU6.Genotypes_PLINK.zip).
+
+# Impute missing data
+This code loads to the 44k SNP data, and imputes the missing markers. The missing markers were replaced with the mode of SNP values.
+```{r impute missing data, echo = T, eval = F}
+library(BGLR)
+
+FAM <- read.table("DataandCode/RiceDiversity_44K_Genotypes_PLINK/sativas413.fam")[1:2]
+MAP <- read.table("DataandCode/RiceDiversity_44K_Genotypes_PLINK/sativas413.map")
+
+PED <- read_ped("DataandCode/RiceDiversity_44K_Genotypes_PLINK/sativas413.ped")
+m <- PED$p
+n <- PED$n
+PED <- PED$x
+
+##SNPs in PED are coded as 0, 1, 2, 3. 2 is missing data. 1 are heterozygous, 0 and 3 are homozygous for 1/1 and 2/2 for major allele and minor allele respectively
+PED[PED == 2] <- NA 
+PED[PED == 0] <- 0
+PED[PED == 1] <- 1
+PED[PED == 3] <- 2
+
+
+W <- t(matrix(PED, nrow=m, ncol=n, byrow = T))
+colnames(W) <- MAP$V2
+rownames(W) <- paste0("NSFTV_", FAM$V2)
+
+#Imputation
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+for (j in 1:ncol(W)) {
+  W[, j] = ifelse(is.na(W[, j]), getmode(W[, j]), W[, j])
+}
+```
+
+# Remove markers with low MAF
+Markers with a MAF less than 0.05 were removed. This removed 3,211 markers, leaving a total of 33,690 markers for computing the genomic relationship matrix (GRM).
+```{r remove markers with low MAF, echo = T, eval = F}
+#load phenotypic data for 378 accessions
+PSA.df <- read.csv("DataandCode/Phenotypes/PSA.cleaned.mn.csv")
+
+W <- W[row.names(W) %in% PSA.df$NSFTV.ID ,]
+W <- W[order(row.names(W)) ,]
+
+freq <- colMeans(W) / 2
+maf <- ifelse(freq > 0.5, 1-freq, freq)
+maf.index <- which(maf < 0.05)
+length(maf.index)
+W <- W[, -maf.index]
+
+MAP <- MAP[-maf.index ,]
+
+write.table(MAP, "DataandCode/CompCluster/MAP_maf0.05.txt", row.names = F, col.names = F, quote = F, sep = "\t")
+```
+
+# Compute GRM using VanRaden's method
+A genomic relationship matrix ($\mathbf{G}$) was calculated using [VanRaden (2008)](https://www.ncbi.nlm.nih.gov/pubmed/18946147).
+$$\mathbf{G} = \frac{\mathbf{Z_{sc} Z_{sc}}' }{m}$$
+Here, $\mathbf{Z_{c}}$ is a centered $n \times m$ matrix, where $m$ is 33,564 SNPs and $n$ is the 357 genotyped rice lines. 
+
+```{r GRM, echo = T, eval = F}
+Zsc <- scale(x=W,center=T,scale=T)
+G <- tcrossprod(Zsc)/ncol(W)
+G <- G + diag(nrow(W))*0.001
+G <- G[match(unique(PSA.df$NSFTV.ID), row.names(G) ) ,]
+G <- G[, match(unique(PSA.df$NSFTV.ID), colnames(G) )]
+
+write.table(t(Zsc), "DataandCode/CompCluster/Zsc.txt", row.names = F, col.names = T, quote = F, sep = "\t")
+write.table(G, "DataandCode/CompCluster/G.txt", row.names = F, col.names = T, quote = F, sep = "\t")
+
+G.final <- as.data.frame(which(row(G) >= col(G),arr.ind=TRUE))
+G.final$G <- G[lower.tri(G, diag=T)]
+G.final <- G.final[,c(2,1,3)]
+G.final <- G.final[order(G.final[,2], G.final[,1]),]
+G.final <- G.final[,c(2,1,3)]
+colnames(G.final)[1:2]=c("Row", "Column")
+attr(G.final, "rowNames") <- row.names(G)
+
+write.table(G.final, "DataandCode/CompCluster/RR/G2.grm", col.names=F, row.names=F, quote=F, sep="\t")
+write.table(G.final, "DataandCode/CompCluster/TP/G2.grm", col.names=F, row.names=F, quote=F, sep="\t")
+```
